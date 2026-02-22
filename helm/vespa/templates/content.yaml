@@ -1,0 +1,54 @@
+# Vespa コンテントノード StatefulSet (データ保存・冗長化)
+# Content node StatefulSet (data storage with redundancy)
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "vespa.fullname" . }}-content
+  labels:
+    {{- include "vespa.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.content.replicas }}
+  selector:
+    matchLabels:
+      app: {{ include "vespa.fullname" . }}-content
+      name: {{ include "vespa.internalService" . }}
+  serviceName: {{ include "vespa.internalService" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "vespa.fullname" . }}-content
+        name: {{ include "vespa.internalService" . }}
+    spec:
+      initContainers:
+        - name: chown-var
+          securityContext:
+            runAsUser: 0
+          image: busybox
+          command: ["sh", "-c", "chown -R 1000 /opt/vespa/var"]
+          volumeMounts:
+            - name: vespa-var
+              mountPath: /opt/vespa/var
+      containers:
+        - name: vespa-content
+          image: {{ include "vespa.image" . }}
+          args: ["services"]
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            runAsUser: 1000
+          envFrom:
+            - configMapRef:
+                name: {{ include "vespa.fullname" . }}-config
+          resources:
+            {{- toYaml .Values.content.resources | nindent 12 }}
+          volumeMounts:
+            - name: vespa-var
+              mountPath: /opt/vespa/var
+  volumeClaimTemplates:
+    - metadata:
+        name: vespa-var
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: {{ .Values.storageClass | quote }}
+        resources:
+          requests:
+            storage: {{ .Values.content.storage.varSize }}

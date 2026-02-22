@@ -1,0 +1,19 @@
+# 一時ファイル / Temporary files
+/tmp/
+*.zip
+*.tar.gz
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# エディタ / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ポートフォワード PID ファイル / Port-forward PID files
+*.pid

@@ -1,0 +1,45 @@
+# Vespa 内部通信用ヘッドレスサービス (StatefulSet の DNS 解決に使用)
+# Headless service for Vespa internal communication (used for StatefulSet DNS resolution)
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "vespa.internalService" . }}
+  labels:
+    {{- include "vespa.labels" . | nindent 4 }}
+    name: {{ include "vespa.internalService" . }}
+spec:
+  clusterIP: None
+  selector:
+    name: {{ include "vespa.internalService" . }}
+---
+# フィードエンドポイント (データ投入用) / Feed endpoint (for document ingestion)
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "vespa.fullname" . }}-feed
+  labels:
+    {{- include "vespa.labels" . | nindent 4 }}
+    app: {{ include "vespa.fullname" . }}
+spec:
+  selector:
+    app: {{ include "vespa.fullname" . }}-feed-container
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+---
+# クエリエンドポイント (検索用) / Query endpoint (for search)
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "vespa.fullname" . }}-query
+  labels:
+    {{- include "vespa.labels" . | nindent 4 }}
+    app: {{ include "vespa.fullname" . }}
+spec:
+  selector:
+    app: {{ include "vespa.fullname" . }}-query-container
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080

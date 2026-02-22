@@ -1,0 +1,19 @@
+apiVersion: v2
+name: vespa
+description: |
+  Vespa 検索エンジンを Kubernetes 上に冗長構成でデプロイする Helm チャート。
+  公式 vespaengine/vespa Docker イメージを使用します。
+  Helm chart to deploy the Vespa search engine in a redundant configuration on Kubernetes,
+  using the official vespaengine/vespa Docker image.
+type: application
+version: 0.1.0
+appVersion: "8"
+keywords:
+  - vespa
+  - search
+  - kubernetes
+home: https://vespa.ai
+sources:
+  - https://github.com/vespa-engine/vespa
+maintainers:
+  - name: vespa-operator-tutorial

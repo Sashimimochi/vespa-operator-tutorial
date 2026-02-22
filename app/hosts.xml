@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Vespa ホスト設定ファイル / Vespa hosts configuration
+     Kubernetes StatefulSet の Pod DNS 名とホストエイリアスのマッピング
+     Mapping of Kubernetes StatefulSet pod DNS names to host aliases
+
+     注意: Helm リリース名を "vespa" 以外にした場合はこのファイルも合わせて変更すること
+     Note: If the Helm release name is changed from "vespa", update this file accordingly
+
+     Pod DNS 形式 / Pod DNS pattern:
+     <release>-<component>-<index>.<release>-internal.<namespace>.svc.cluster.local
+-->
+<hosts>
+  <!-- コンフィグサーバー / Config servers (node0-2) -->
+  <host name="vespa-configserver-0.vespa-internal.default.svc.cluster.local">
+    <alias>node0</alias>
+  </host>
+  <host name="vespa-configserver-1.vespa-internal.default.svc.cluster.local">
+    <alias>node1</alias>
+  </host>
+  <host name="vespa-configserver-2.vespa-internal.default.svc.cluster.local">
+    <alias>node2</alias>
+  </host>
+
+  <!-- 管理ノード / Admin node (node3) -->
+  <host name="vespa-admin-0.vespa-internal.default.svc.cluster.local">
+    <alias>node3</alias>
+  </host>
+
+  <!-- フィードコンテナ / Feed containers (node4-5) -->
+  <host name="vespa-feed-container-0.vespa-internal.default.svc.cluster.local">
+    <alias>node4</alias>
+  </host>
+  <host name="vespa-feed-container-1.vespa-internal.default.svc.cluster.local">
+    <alias>node5</alias>
+  </host>
+
+  <!-- クエリコンテナ / Query containers (node6-7) -->
+  <host name="vespa-query-container-0.vespa-internal.default.svc.cluster.local">
+    <alias>node6</alias>
+  </host>
+  <host name="vespa-query-container-1.vespa-internal.default.svc.cluster.local">
+    <alias>node7</alias>
+  </host>
+
+  <!-- コンテントノード / Content nodes (node8-9) -->
+  <host name="vespa-content-0.vespa-internal.default.svc.cluster.local">
+    <alias>node8</alias>
+  </host>
+  <host name="vespa-content-1.vespa-internal.default.svc.cluster.local">
+    <alias>node9</alias>
+  </host>
+</hosts>

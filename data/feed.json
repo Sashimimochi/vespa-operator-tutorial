@@ -1,0 +1,158 @@
+[
+  {
+    "put": "id:music:music::1",
+    "fields": {
+      "title": "Bohemian Rhapsody",
+      "title_ja": "ボヘミアン・ラプソディ",
+      "artist": "Queen",
+      "artist_ja": "クイーン",
+      "album": "A Night at the Opera",
+      "album_ja": "オペラ座の夜",
+      "year": 1975,
+      "genre": "Rock"
+    }
+  },
+  {
+    "put": "id:music:music::2",
+    "fields": {
+      "title": "Hotel California",
+      "title_ja": "ホテル・カリフォルニア",
+      "artist": "Eagles",
+      "artist_ja": "イーグルス",
+      "album": "Hotel California",
+      "album_ja": "ホテル・カリフォルニア",
+      "year": 1977,
+      "genre": "Rock"
+    }
+  },
+  {
+    "put": "id:music:music::3",
+    "fields": {
+      "title": "Imagine",
+      "title_ja": "イマジン",
+      "artist": "John Lennon",
+      "artist_ja": "ジョン・レノン",
+      "album": "Imagine",
+      "album_ja": "イマジン",
+      "year": 1971,
+      "genre": "Pop"
+    }
+  },
+  {
+    "put": "id:music:music::4",
+    "fields": {
+      "title": "Thriller",
+      "title_ja": "スリラー",
+      "artist": "Michael Jackson",
+      "artist_ja": "マイケル・ジャクソン",
+      "album": "Thriller",
+      "album_ja": "スリラー",
+      "year": 1982,
+      "genre": "Pop"
+    }
+  },
+  {
+    "put": "id:music:music::5",
+    "fields": {
+      "title": "Smells Like Teen Spirit",
+      "title_ja": "スメルズ・ライク・ティーン・スピリット",
+      "artist": "Nirvana",
+      "artist_ja": "ニルヴァーナ",
+      "album": "Nevermind",
+      "album_ja": "ネヴァーマインド",
+      "year": 1991,
+      "genre": "Grunge"
+    }
+  },
+  {
+    "put": "id:music:music::6",
+    "fields": {
+      "title": "Yesterday",
+      "title_ja": "イエスタデイ",
+      "artist": "The Beatles",
+      "artist_ja": "ザ・ビートルズ",
+      "album": "Help!",
+      "album_ja": "ヘルプ！",
+      "year": 1965,
+      "genre": "Pop"
+    }
+  },
+  {
+    "put": "id:music:music::7",
+    "fields": {
+      "title": "Like a Rolling Stone",
+      "title_ja": "ライク・ア・ローリング・ストーン",
+      "artist": "Bob Dylan",
+      "artist_ja": "ボブ・ディラン",
+      "album": "Highway 61 Revisited",
+      "album_ja": "ハイウェイ61リビジテッド",
+      "year": 1965,
+      "genre": "Folk Rock"
+    }
+  },
+  {
+    "put": "id:music:music::8",
+    "fields": {
+      "title": "What's Going On",
+      "title_ja": "ホワッツ・ゴーイング・オン",
+      "artist": "Marvin Gaye",
+      "artist_ja": "マーヴィン・ゲイ",
+      "album": "What's Going On",
+      "album_ja": "ホワッツ・ゴーイング・オン",
+      "year": 1971,
+      "genre": "Soul"
+    }
+  },
+  {
+    "put": "id:music:music::9",
+    "fields": {
+      "title": "Purple Haze",
+      "title_ja": "パープル・ヘイズ",
+      "artist": "Jimi Hendrix",
+      "artist_ja": "ジミ・ヘンドリックス",
+      "album": "Are You Experienced",
+      "album_ja": "アー・ユー・エクスペリエンスト",
+      "year": 1967,
+      "genre": "Rock"
+    }
+  },
+  {
+    "put": "id:music:music::10",
+    "fields": {
+      "title": "Respect",
+      "title_ja": "リスペクト",
+      "artist": "Aretha Franklin",
+      "artist_ja": "アレサ・フランクリン",
+      "album": "I Never Loved a Man the Way I Love You",
+      "album_ja": "アイ・ネバー・ラブド・ア・マン",
+      "year": 1967,
+      "genre": "Soul"
+    }
+  },
+  {
+    "put": "id:music:music::11",
+    "fields": {
+      "title": "Johnny B. Goode",
+      "title_ja": "ジョニー・B・グッド",
+      "artist": "Chuck Berry",
+      "artist_ja": "チャック・ベリー",
+      "album": "Johnny B. Goode",
+      "album_ja": "ジョニー・B・グッド",
+      "year": 1958,
+      "genre": "Rock and Roll"
+    }
+  },
+  {
+    "put": "id:music:music::12",
+    "fields": {
+      "title": "Good Vibrations",
+      "title_ja": "グッド・ヴァイブレーション",
+      "artist": "The Beach Boys",
+      "artist_ja": "ザ・ビーチ・ボーイズ",
+      "album": "Smile",
+      "album_ja": "スマイル",
+      "year": 1966,
+      "genre": "Pop"
+    }
+  }
+]

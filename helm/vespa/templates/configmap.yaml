@@ -1,0 +1,12 @@
+# Vespa 設定 ConfigMap
+# VESPA_CONFIGSERVERS: 全ノードが参照するコンフィグサーバーの FQDN リスト
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "vespa.fullname" . }}-config
+  labels:
+    {{- include "vespa.labels" . | nindent 4 }}
+data:
+  VESPA_CONFIGSERVERS: {{ include "vespa.configservers" . | quote }}
+  VESPA_CONFIGSERVER_JVMARGS: {{ .Values.configserver.jvmArgs | quote }}
+  VESPA_CONFIGPROXY_JVMARGS: {{ .Values.configserver.configProxyJvmArgs | quote }}
