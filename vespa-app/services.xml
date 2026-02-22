@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+  Vespa サービス設定ファイル
+  - admin: コンフィグサーバー x3（ZooKeeper クォーラム）
+  - container: ドキュメント API + 検索 API（3ノード）
+  - content: コンテンツストレージ（3ノード、冗長化 2）
+-->
+<services version="1.0">
+
+  <!-- 管理クラスター: コンフィグサーバー x3 で ZooKeeper クォーラムを形成 -->
+  <admin version="2.0">
+    <adminserver hostalias="node0"/>
+    <configservers>
+      <configserver hostalias="node0"/>
+      <configserver hostalias="node1"/>
+      <configserver hostalias="node2"/>
+    </configservers>
+    <logserver hostalias="node0"/>
+    <slobroks>
+      <slobrok hostalias="node0"/>
+      <slobrok hostalias="node1"/>
+      <slobrok hostalias="node2"/>
+    </slobroks>
+  </admin>
+
+  <!-- コンテナークラスター: ドキュメントAPI と検索APIを提供 -->
+  <container id="default" version="1.0">
+    <document-api/>
+    <search/>
+    <nodes>
+      <node hostalias="node0"/>
+      <node hostalias="node1"/>
+      <node hostalias="node2"/>
+    </nodes>
+  </container>
+
+  <!-- コンテンツクラスター: 冗長化設定（redundancy=2）でデータを2ノードに複製 -->
+  <content id="music" version="1.0">
+    <redundancy>2</redundancy>
+    <documents>
+      <document type="music" mode="index"/>
+    </documents>
+    <nodes>
+      <node hostalias="node0" distribution-key="0"/>
+      <node hostalias="node1" distribution-key="1"/>
+      <node hostalias="node2" distribution-key="2"/>
+    </nodes>
+  </content>
+
+</services>

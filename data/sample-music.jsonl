@@ -1,0 +1,15 @@
+{"put": "id:music:music::1", "fields": {"title": "夜に駆ける", "artist": "YOASOBI", "album": "THE BOOK", "year": 2020, "genre": "J-POP", "lyrics": "沈むように溶けてゆくように染み渡っていくこの気持ち", "language": "ja"}}
+{"put": "id:music:music::2", "fields": {"title": "Pretender", "artist": "Official髭男dism", "album": "Traveler", "year": 2019, "genre": "J-POP", "lyrics": "ねえ 夢を見せてよ 目映いほどに眩しくなるほどに", "language": "ja"}}
+{"put": "id:music:music::3", "fields": {"title": "群青", "artist": "YOASOBI", "album": "THE BOOK", "year": 2020, "genre": "J-POP", "lyrics": "ただ前だけを向いて ただただ前だけを向いて", "language": "ja"}}
+{"put": "id:music:music::4", "fields": {"title": "新時代", "artist": "Ado", "album": "ONE PIECE FILM RED", "year": 2022, "genre": "J-POP", "lyrics": "新時代へと歩み進め 仲間と共に", "language": "ja"}}
+{"put": "id:music:music::5", "fields": {"title": "炎", "artist": "LiSA", "album": "炎", "year": 2020, "genre": "アニメ", "lyrics": "君の温もりを感じながら 歩いていけるなら", "language": "ja"}}
+{"put": "id:music:music::6", "fields": {"title": "廻廻奇譚", "artist": "Eve", "album": "廻廻奇譚", "year": 2020, "genre": "アニメ", "lyrics": "奇妙な縁が紡ぎ出す 運命の糸を手繰り寄せ", "language": "ja"}}
+{"put": "id:music:music::7", "fields": {"title": "怪物", "artist": "YOASOBI", "album": "THE BOOK 2", "year": 2021, "genre": "アニメ", "lyrics": "ねえ怪物になっちゃった 何もかも壊したくなっちゃった", "language": "ja"}}
+{"put": "id:music:music::8", "fields": {"title": "うっせぇわ", "artist": "Ado", "album": "うっせぇわ", "year": 2020, "genre": "J-POP", "lyrics": "うっせぇ うっせぇ うっせぇわ あなたが思うより健康です", "language": "ja"}}
+{"put": "id:music:music::9", "fields": {"title": "Bohemian Rhapsody", "artist": "Queen", "album": "A Night at the Opera", "year": 1975, "genre": "Rock", "lyrics": "Is this the real life? Is this just fantasy?", "language": "en"}}
+{"put": "id:music:music::10", "fields": {"title": "Imagine", "artist": "John Lennon", "album": "Imagine", "year": 1971, "genre": "Rock", "lyrics": "Imagine there's no heaven, it's easy if you try", "language": "en"}}
+{"put": "id:music:music::11", "fields": {"title": "Shape of You", "artist": "Ed Sheeran", "album": "Divide", "year": 2017, "genre": "Pop", "lyrics": "The club isn't the best place to find a lover", "language": "en"}}
+{"put": "id:music:music::12", "fields": {"title": "Blinding Lights", "artist": "The Weeknd", "album": "After Hours", "year": 2019, "genre": "Pop", "lyrics": "I've been tryna call, I've been on my own for long enough", "language": "en"}}
+{"put": "id:music:music::13", "fields": {"title": "踊", "artist": "Ado", "album": "狂言", "year": 2022, "genre": "J-POP", "lyrics": "踊れ踊れもっと踊れ 止まれば終わりだ", "language": "ja"}}
+{"put": "id:music:music::14", "fields": {"title": "ドライフラワー", "artist": "優里", "album": "ドライフラワー", "year": 2020, "genre": "J-POP", "lyrics": "枯れても綺麗なドライフラワー 君のことを思い出すたびに", "language": "ja"}}
+{"put": "id:music:music::15", "fields": {"title": "小さな恋のうた", "artist": "MONGOL800", "album": "MESSAGE", "year": 2001, "genre": "Rock", "lyrics": "小さな恋のうた 愛するということ", "language": "ja"}}

@@ -1,0 +1,77 @@
+# 音楽ドキュメントスキーマ（日本語・英語対応）
+#
+# Vespa の組み込み言語処理により日本語テキストの形態素解析が適用される。
+# フィールドに index: enable-bm25 を指定することで BM25 スコアリングが有効になる。
+schema music {
+  document music {
+
+    # 楽曲タイトル（日本語・英語対応、BM25 インデックス）
+    field title type string {
+      indexing: summary | index
+      index: enable-bm25
+      summary: dynamic
+    }
+
+    # アーティスト名
+    field artist type string {
+      indexing: summary | index
+      index: enable-bm25
+    }
+
+    # アルバム名
+    field album type string {
+      indexing: summary | index
+      index: enable-bm25
+    }
+
+    # リリース年（属性として保存、ソート・フィルタ可能）
+    field year type int {
+      indexing: summary | attribute
+    }
+
+    # ジャンル（属性として保存、フィルタ可能）
+    field genre type string {
+      indexing: summary | attribute
+    }
+
+    # 歌詞（日本語全文検索対応）
+    field lyrics type string {
+      indexing: summary | index
+      index: enable-bm25
+      summary: dynamic
+    }
+
+    # 言語コード（"ja" または "en"）
+    field language type string {
+      indexing: summary | attribute
+    }
+
+  }
+
+  # デフォルト検索フィールドセット
+  fieldset default {
+    fields: title, artist, album, lyrics
+  }
+
+  # デフォルトランキングプロファイル: BM25 による全フィールド検索
+  rank-profile default inherits default {
+    first-phase {
+      expression: bm25(title) + bm25(artist) + bm25(lyrics)
+    }
+  }
+
+  # タイトル重視ランキング
+  rank-profile title-focused {
+    first-phase {
+      expression: bm25(title) * 2.0 + bm25(artist) + bm25(lyrics)
+    }
+  }
+
+  # アーティスト重視ランキング
+  rank-profile artist-focused {
+    first-phase {
+      expression: bm25(title) + bm25(artist) * 2.0 + bm25(lyrics)
+    }
+  }
+
+}

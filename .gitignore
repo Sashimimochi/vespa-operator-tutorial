@@ -1,0 +1,27 @@
+# ビルドアーティファクト
+*.zip
+*.tar.gz
+dist/
+build/
+
+# Kubernetes secrets
+*-secret.yaml
+secrets/
+
+# ログファイル
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# エディタ
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 一時ファイル
+tmp/
+temp/

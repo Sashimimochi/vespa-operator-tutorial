@@ -1,0 +1,90 @@
+---
+# アプリケーションパッケージデプロイ Job
+# Vespa コンフィグサーバーが起動したあとに実行し、
+# ConfigMap からアプリパッケージ（services.xml, hosts.xml, スキーマ）を
+# zip 化してコンフィグサーバーの REST API 経由でデプロイする
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: vespa-deploy-app
+  namespace: vespa
+  labels:
+    app.kubernetes.io/name: vespa
+    app.kubernetes.io/component: deploy-job
+spec:
+  # 失敗時は最大 5 回リトライ
+  backoffLimit: 5
+  template:
+    metadata:
+      labels:
+        app: vespa-deploy
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: deploy
+          image: vespaengine/vespa:8
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -e
+
+              CONFIG_SERVER="vespa-0.vespa-internal.vespa.svc.cluster.local"
+              DEPLOY_URL="http://${CONFIG_SERVER}:19071/application/v2/tenant/default/prepareandactivate"
+
+              echo "=== コンフィグサーバーの起動を待機中... ==="
+              until curl -sf "http://${CONFIG_SERVER}:19071/state/v1/health" > /dev/null 2>&1; do
+                echo "  コンフィグサーバーはまだ起動していません。10秒後に再試行します..."
+                sleep 10
+              done
+              echo "=== コンフィグサーバーが起動しました ==="
+
+              echo "=== アプリケーションパッケージを準備中... ==="
+              APP_DIR=$(mktemp -d)
+              mkdir -p "${APP_DIR}/schemas"
+
+              # ConfigMap からファイルをコピー
+              cp /config/services.xml "${APP_DIR}/services.xml"
+              cp /config/hosts.xml    "${APP_DIR}/hosts.xml"
+              cp /schemas/music.sd    "${APP_DIR}/schemas/music.sd"
+
+              echo "--- services.xml ---"
+              cat "${APP_DIR}/services.xml"
+              echo "--- hosts.xml ---"
+              cat "${APP_DIR}/hosts.xml"
+              echo "--- schemas/music.sd ---"
+              cat "${APP_DIR}/schemas/music.sd"
+
+              echo "=== zip ファイルを作成中... ==="
+              cd "${APP_DIR}"
+              zip -r /tmp/app.zip .
+
+              echo "=== アプリケーションをデプロイ中... ==="
+              RESPONSE=$(curl -s -o /tmp/deploy-response.txt -w "%{http_code}" \
+                -X POST \
+                --header "Content-Type: application/zip" \
+                --data-binary @/tmp/app.zip \
+                "${DEPLOY_URL}")
+
+              echo "HTTP ステータス: ${RESPONSE}"
+              cat /tmp/deploy-response.txt
+
+              if [ "${RESPONSE}" -ge 200 ] && [ "${RESPONSE}" -lt 300 ]; then
+                echo "=== デプロイ成功！ ==="
+              else
+                echo "=== デプロイ失敗（HTTP ${RESPONSE}）==="
+                exit 1
+              fi
+          volumeMounts:
+            - name: services-config
+              mountPath: /config
+            - name: schemas-config
+              mountPath: /schemas
+      volumes:
+        - name: services-config
+          configMap:
+            name: vespa-app-services
+        - name: schemas-config
+          configMap:
+            name: vespa-app-schemas

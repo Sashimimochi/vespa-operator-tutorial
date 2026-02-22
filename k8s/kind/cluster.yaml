@@ -1,0 +1,26 @@
+# kind クラスター設定
+# コントロールプレーン 1台 + ワーカー 3台（HA構成）
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: vespa-tutorial
+nodes:
+  - role: control-plane
+    # ホストポートをマッピングして Vespa API にアクセスできるようにする
+    extraPortMappings:
+      - containerPort: 30080
+        hostPort: 8080
+        protocol: TCP
+      - containerPort: 30071
+        hostPort: 19071
+        protocol: TCP
+  - role: worker
+    labels:
+      vespa-node: "true"
+  - role: worker
+    labels:
+      vespa-node: "true"
+  - role: worker
+    labels:
+      vespa-node: "true"
+networking:
+  disableDefaultCNI: false

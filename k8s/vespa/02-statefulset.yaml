@@ -1,0 +1,107 @@
+---
+# Vespa StatefulSet
+# 3つのポッドで構成するHA（高可用性）クラスター
+# - コンフィグサーバー（ZooKeeper): 全3ノード
+# - コンテナーノード（クエリAPI): 全3ノード
+# - コンテンツノード（データストレージ): 全3ノード、redundancy=2
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: vespa
+  namespace: vespa
+  labels:
+    app.kubernetes.io/name: vespa
+    app.kubernetes.io/component: server
+spec:
+  serviceName: vespa-internal
+  replicas: 3
+  selector:
+    matchLabels:
+      app: vespa
+  podManagementPolicy: Parallel
+  template:
+    metadata:
+      labels:
+        app: vespa
+        app.kubernetes.io/name: vespa
+    spec:
+      # Vespa ポッドを異なるワーカーノードに分散させる
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - vespa
+                topologyKey: kubernetes.io/hostname
+      # コンフィグサーバー一覧を環境変数で渡す
+      initContainers:
+        - name: chown-data
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              chown -R 1000:1000 /opt/vespa/var || true
+          volumeMounts:
+            - name: vespa-data
+              mountPath: /opt/vespa/var
+      containers:
+        - name: vespa
+          image: vespaengine/vespa:8
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: VESPA_CONFIGSERVERS
+              value: "vespa-0.vespa-internal.vespa.svc.cluster.local,vespa-1.vespa-internal.vespa.svc.cluster.local,vespa-2.vespa-internal.vespa.svc.cluster.local"
+          ports:
+            - name: config-server
+              containerPort: 19071
+              protocol: TCP
+            - name: container
+              containerPort: 8080
+              protocol: TCP
+            - name: slobrok
+              containerPort: 19100
+              protocol: TCP
+            - name: admin
+              containerPort: 19050
+              protocol: TCP
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu: "500m"
+            limits:
+              memory: "4Gi"
+              cpu: "2"
+          volumeMounts:
+            - name: vespa-data
+              mountPath: /opt/vespa/var
+          # コンテナの準備完了チェック
+          readinessProbe:
+            httpGet:
+              path: /state/v1/health
+              port: 19050
+            initialDelaySeconds: 90
+            periodSeconds: 10
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /state/v1/health
+              port: 19050
+            initialDelaySeconds: 120
+            periodSeconds: 30
+            failureThreshold: 5
+  # 各ポッドに永続ボリュームを割り当て
+  volumeClaimTemplates:
+    - metadata:
+        name: vespa-data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi

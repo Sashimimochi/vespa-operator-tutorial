@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+  ホストエイリアス定義
+  StatefulSet のポッド DNS 名とエイリアスをマッピング
+  書式: <pod-name>.<headless-service>.<namespace>.svc.cluster.local
+-->
+<hosts>
+  <host name="vespa-0.vespa-internal.vespa.svc.cluster.local">
+    <alias>node0</alias>
+  </host>
+  <host name="vespa-1.vespa-internal.vespa.svc.cluster.local">
+    <alias>node1</alias>
+  </host>
+  <host name="vespa-2.vespa-internal.vespa.svc.cluster.local">
+    <alias>node2</alias>
+  </host>
+</hosts>

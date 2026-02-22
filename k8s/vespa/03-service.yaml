@@ -1,0 +1,53 @@
+---
+# ヘッドレスサービス: StatefulSet ポッド間の内部通信用
+# vespa-0.vespa-internal.vespa.svc.cluster.local などの DNS が有効になる
+apiVersion: v1
+kind: Service
+metadata:
+  name: vespa-internal
+  namespace: vespa
+  labels:
+    app.kubernetes.io/name: vespa
+    app.kubernetes.io/component: service
+spec:
+  clusterIP: None
+  selector:
+    app: vespa
+  ports:
+    - name: config-server
+      port: 19071
+      targetPort: 19071
+    - name: container
+      port: 8080
+      targetPort: 8080
+    - name: slobrok
+      port: 19100
+      targetPort: 19100
+    - name: admin
+      port: 19050
+      targetPort: 19050
+
+---
+# 外部公開サービス: ホストからアクセスするための NodePort
+# kind の extraPortMappings でホストポートにマッピング済み
+apiVersion: v1
+kind: Service
+metadata:
+  name: vespa
+  namespace: vespa
+  labels:
+    app.kubernetes.io/name: vespa
+    app.kubernetes.io/component: service
+spec:
+  type: NodePort
+  selector:
+    app: vespa
+  ports:
+    - name: container
+      port: 8080
+      targetPort: 8080
+      nodePort: 30080
+    - name: config-server
+      port: 19071
+      targetPort: 19071
+      nodePort: 30071
