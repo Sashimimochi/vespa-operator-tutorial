@@ -5,28 +5,21 @@
 <services version="1.0">
 
   <admin version="2.0">
-    <!-- コンフィグサーバー (ZooKeeper クォーラム: 3 台) -->
-    <!-- Config servers (ZooKeeper quorum: 3 nodes) -->
+    <!-- コンフィグサーバー (シングルノード構成) / Config server (single node) -->
     <configservers>
       <configserver hostalias="node0" />
-      <configserver hostalias="node1" />
-      <configserver hostalias="node2" />
     </configservers>
-    <!-- クラスターコントローラー / Cluster controllers -->
+    <!-- クラスターコントローラー / Cluster controller -->
     <cluster-controllers>
       <!-- jvm-options はローカルテスト用のメモリ削減設定。本番では削除すること -->
       <!-- jvm-options shrink memory for local testing — remove for production -->
       <cluster-controller hostalias="node0" jvm-options="-Xms32M -Xmx64M" />
-      <cluster-controller hostalias="node1" jvm-options="-Xms32M -Xmx64M" />
-      <cluster-controller hostalias="node2" jvm-options="-Xms32M -Xmx64M" />
     </cluster-controllers>
     <!-- スロブロク (サービスディスカバリー) / Slobrok (service discovery) -->
     <slobroks>
       <slobrok hostalias="node0" />
-      <slobrok hostalias="node1" />
-      <slobrok hostalias="node2" />
     </slobroks>
-    <adminserver hostalias="node3" />
+    <adminserver hostalias="node1" />
   </admin>
 
   <!-- フィードコンテナ (データ投入用) / Feed container cluster (for document ingestion) -->
@@ -36,8 +29,7 @@
     <nodes>
       <!-- jvm options はローカルテスト用 / jvm options for local testing only — remove for production -->
       <jvm options="-Xms32M -Xmx128M" />
-      <node hostalias="node4" />
-      <node hostalias="node5" />
+      <node hostalias="node2" />
     </nodes>
   </container>
 
@@ -47,22 +39,20 @@
     <nodes>
       <!-- jvm options はローカルテスト用 / jvm options for local testing only — remove for production -->
       <jvm options="-Xms32M -Xmx128M" />
-      <node hostalias="node6" />
-      <node hostalias="node7" />
+      <node hostalias="node3" />
     </nodes>
   </container>
 
-  <!-- コンテントクラスター (データ保存・冗長化) / Content cluster (data storage with redundancy) -->
+  <!-- コンテントクラスター (データ保存) / Content cluster (data storage) -->
   <content id="music" version="1.0">
-    <!-- 冗長度 2: データを 2 ノードに複製する / Redundancy 2: replicate data across 2 nodes -->
-    <min-redundancy>2</min-redundancy>
+    <!-- 冗長度 1: シングルノード構成 / Redundancy 1: single node -->
+    <min-redundancy>1</min-redundancy>
     <documents>
       <document type="music" mode="index" />
       <document-processing cluster="feed" />
     </documents>
     <nodes>
-      <node hostalias="node8" distribution-key="0" />
-      <node hostalias="node9" distribution-key="1" />
+      <node hostalias="node4" distribution-key="0" />
     </nodes>
   </content>
 

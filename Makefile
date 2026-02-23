@@ -177,21 +177,23 @@ wait-app: ## アプリケーション起動後の健全性チェックを待つ 
 	@echo "$(BLUE)>>> アプリケーションの起動を待っています (60 秒)...$(RESET)"
 	@sleep 60
 	@echo "$(BLUE)>>> フィードコンテナの健全性を確認しています...$(RESET)" && \
-	kubectl port-forward svc/$(FEED_SVC) $(FEED_PORT):8080 --namespace=$(NAMESPACE) & \
+	kubectl port-forward svc/$(FEED_SVC) 18080:8080 --namespace=$(NAMESPACE) & \
 	PF_PID=$$!; \
 	sleep 5; \
 	for i in $$(seq 1 12); do \
-		STATUS=$$(curl -s http://localhost:$(FEED_PORT)/state/v1/health | \
+		STATUS=$$(curl -s http://localhost:18080/state/v1/health | \
 			python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status',{}).get('code','unknown'))" 2>/dev/null); \
 		echo "フィードコンテナ状態: $$STATUS (試行 $$i/12)"; \
 		if [ "$$STATUS" = "up" ]; then \
 			echo "$(GREEN)>>> フィードコンテナが起動しました$(RESET)"; \
 			kill $$PF_PID 2>/dev/null || true; \
+			sleep 3; \
 			exit 0; \
 		fi; \
 		sleep 10; \
 	done; \
 	kill $$PF_PID 2>/dev/null || true; \
+	sleep 3; \
 	echo "タイムアウト: フィードコンテナがまだ起動中の可能性があります。make check-health で再確認してください。 / Timeout: Feed container may still be starting. Re-check with: make check-health"
 
 # =============================================================================
@@ -203,20 +205,15 @@ feed: ## サンプルデータを Vespa に投入する / Feed sample data to Ve
 	kubectl port-forward svc/$(FEED_SVC) $(FEED_PORT):8080 --namespace=$(NAMESPACE) & \
 	PF_PID=$$!; \
 	sleep 5; \
-	python3 -c "\
-import json, urllib.request, sys; \
-docs = json.load(open('data/feed.json')); \
-[( \
-  urllib.request.urlopen(urllib.request.Request( \
-    'http://localhost:$(FEED_PORT)/document/v1/music/music/docid/' + d['put'].split('::')[-1], \
-    data=json.dumps({'fields': d['fields']}).encode(), \
-    headers={'Content-Type': 'application/json'}, \
-    method='POST' \
-  )), \
-  print('投入: ' + d['fields']['title'] + ' / ' + d['fields'].get('title_ja','')) \
-) for d in docs]"; \
+	python3 scripts/feed.py $(FEED_PORT) data/feed.json; \
+	FEED_STATUS=$$?; \
 	kill $$PF_PID 2>/dev/null || true; \
-	echo "$(GREEN)>>> データ投入が完了しました$(RESET)"
+	if [ $$FEED_STATUS -eq 0 ]; then \
+		echo "$(GREEN)>>> データ投入が完了しました$(RESET)"; \
+	else \
+		echo "データ投入に失敗したドキュメントがあります。make status で状態を確認してください。"; \
+		exit 1; \
+	fi
 
 # =============================================================================
 # 検索 / Search

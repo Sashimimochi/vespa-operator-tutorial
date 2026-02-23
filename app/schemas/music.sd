@@ -67,9 +67,14 @@ schema music {
 
     }
 
-    # デフォルト検索対象フィールドセット / Default fieldset for search
+    # デフォルト検索対象フィールドセット (英語フィールド) / Default fieldset for English search
     fieldset default {
-        fields: title, title_ja, artist, artist_ja, album, album_ja
+        fields: title, artist, album
+    }
+
+    # 日本語検索用フィールドセット (2-gram) / Fieldset for Japanese search
+    fieldset default_ja {
+        fields: title_ja, artist_ja, album_ja
     }
 
     # デフォルトランキング (nativeRank) / Default ranking profile
