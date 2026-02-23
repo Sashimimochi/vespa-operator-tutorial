@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Vespa サービス設定ファイル / Vespa services configuration
+     ノード数は hosts.xml のエイリアスと一致させること
+     Node counts must match the aliases defined in hosts.xml -->
+<services version="1.0">
+
+  <admin version="2.0">
+    <!-- コンフィグサーバー (シングルノード構成) / Config server (single node) -->
+    <configservers>
+      <configserver hostalias="node0" />
+    </configservers>
+    <!-- クラスターコントローラー / Cluster controller -->
+    <cluster-controllers>
+      <!-- jvm-options はローカルテスト用のメモリ削減設定。本番では削除すること -->
+      <!-- jvm-options shrink memory for local testing — remove for production -->
+      <cluster-controller hostalias="node0" jvm-options="-Xms32M -Xmx64M" />
+    </cluster-controllers>
+    <!-- スロブロク (サービスディスカバリー) / Slobrok (service discovery) -->
+    <slobroks>
+      <slobrok hostalias="node0" />
+    </slobroks>
+    <adminserver hostalias="node1" />
+  </admin>
+
+  <!-- フィードコンテナ (データ投入用) / Feed container cluster (for document ingestion) -->
+  <container id="feed" version="1.0">
+    <document-api />
+    <document-processing />
+    <nodes>
+      <!-- jvm options はローカルテスト用 / jvm options for local testing only — remove for production -->
+      <jvm options="-Xms32M -Xmx128M" />
+      <node hostalias="node2" />
+    </nodes>
+  </container>
+
+  <!-- クエリコンテナ (検索用) / Query container cluster (for search) -->
+  <container id="query" version="1.0">
+    <search />
+    <nodes>
+      <!-- jvm options はローカルテスト用 / jvm options for local testing only — remove for production -->
+      <jvm options="-Xms32M -Xmx128M" />
+      <node hostalias="node3" />
+    </nodes>
+  </container>
+
+  <!-- コンテントクラスター (データ保存) / Content cluster (data storage) -->
+  <content id="music" version="1.0">
+    <!-- 冗長度 1: シングルノード構成 / Redundancy 1: single node -->
+    <min-redundancy>1</min-redundancy>
+    <documents>
+      <document type="music" mode="index" />
+      <document-processing cluster="feed" />
+    </documents>
+    <nodes>
+      <node hostalias="node4" distribution-key="0" />
+    </nodes>
+  </content>
+
+</services>

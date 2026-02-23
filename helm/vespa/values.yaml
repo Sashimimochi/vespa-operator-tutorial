@@ -1,0 +1,83 @@
+# Vespa Helm チャート デフォルト値
+# 公式 vespaengine/vespa イメージを使用してマルチノード冗長クラスターを構築する
+# Default values for Vespa Helm chart
+# Builds a multi-node redundant cluster using the official vespaengine/vespa image
+
+# Vespa Docker イメージ設定
+image:
+  repository: vespaengine/vespa
+  # tag はデフォルトで Chart.yaml の appVersion を使用 (バージョンを固定したい場合は指定)
+  # tag: "8.x.x"
+  # ローカル開発には IfNotPresent を推奨 / Use IfNotPresent for local dev; Always for production
+  pullPolicy: IfNotPresent
+
+# Kubernetes 名前空間 (helm install 時に --namespace で指定する場合はここは無視される)
+namespace: default
+
+# コンフィグサーバー (ZooKeeper クォーラムのため 3 台を推奨)
+# Config servers (3 recommended for ZooKeeper quorum)
+configserver:
+  replicas: 1
+  resources:
+    requests:
+      memory: "1G"
+    limits:
+      memory: "1.5G"
+  storage:
+    varSize: 5Gi
+    logsSize: 5Gi
+    workspaceSize: 1Gi
+  # JVM オプション (ローカル開発用に小さく設定 / Small for local dev — remove for production)
+  jvmArgs: "-Xms32M -Xmx128M"
+  configProxyJvmArgs: "-Xms32M -Xmx32M"
+
+# 管理ノード / Admin node
+admin:
+  replicas: 1
+  resources:
+    requests:
+      memory: "512Mi"
+    limits:
+      memory: "1G"
+
+# フィードコンテナ (データ投入用) / Feed containers (for document ingestion)
+feedContainer:
+  replicas: 1
+  resources:
+    requests:
+      memory: "1G"
+    limits:
+      memory: "1.5G"
+  # JVM オプション (ローカル開発用 / Local dev only — remove for production)
+  jvmArgs: "-Xms32M -Xmx128M"
+
+# クエリコンテナ (検索用) / Query containers (for search)
+queryContainer:
+  replicas: 1
+  resources:
+    requests:
+      memory: "1G"
+    limits:
+      memory: "1.5G"
+  # JVM オプション (ローカル開発用 / Local dev only — remove for production)
+  jvmArgs: "-Xms32M -Xmx128M"
+
+# コンテントノード (データ保存用、冗長化のため 2 台以上を推奨)
+# Content nodes (for data storage, 2+ recommended for redundancy)
+content:
+  replicas: 1
+  resources:
+    requests:
+      memory: "1G"
+    limits:
+      memory: "1.5G"
+  storage:
+    varSize: 10Gi
+
+# ストレージクラス (kind はデフォルトで "standard" を提供する)
+# Storage class (kind provides "standard" by default)
+storageClass: "standard"
+
+# ローカル開発環境向け: 4GB メモリチェックをスキップ (本番では false を推奨)
+# For local dev: skip Vespa's 4GB memory check (set false in production)
+ignoreNotEnoughMemory: "true"

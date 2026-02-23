@@ -1,0 +1,90 @@
+# Vespa コンフィグサーバー StatefulSet
+# ZooKeeper クォーラムのため replicas: 3 を推奨
+# Config server StatefulSet — replicas: 3 recommended for ZooKeeper quorum
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "vespa.fullname" . }}-configserver
+  labels:
+    {{- include "vespa.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.configserver.replicas }}
+  selector:
+    matchLabels:
+      app: {{ include "vespa.fullname" . }}-configserver
+      name: {{ include "vespa.internalService" . }}
+  serviceName: {{ include "vespa.internalService" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "vespa.fullname" . }}-configserver
+        name: {{ include "vespa.internalService" . }}
+    spec:
+      initContainers:
+        - name: chown-var
+          securityContext:
+            runAsUser: 0
+          image: busybox
+          command: ["sh", "-c", "chown -R 1000 /opt/vespa/var"]
+          volumeMounts:
+            - name: vespa-var
+              mountPath: /opt/vespa/var
+        - name: chown-logs
+          securityContext:
+            runAsUser: 0
+          image: busybox
+          command: ["sh", "-c", "chown -R 1000 /opt/vespa/logs"]
+          volumeMounts:
+            - name: vespa-logs
+              mountPath: /opt/vespa/logs
+      containers:
+        - name: vespa-configserver
+          image: {{ include "vespa.image" . }}
+          args: ["configserver,services"]
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            runAsUser: 1000
+          ports:
+            - containerPort: 19071
+              name: config-api
+            - containerPort: 2181
+              name: zookeeper
+          envFrom:
+            - configMapRef:
+                name: {{ include "vespa.fullname" . }}-config
+          # readinessProbe は設定しない — ZooKeeper クォーラムの起動に必要
+          # No readinessProbe — required for ZooKeeper quorum startup
+          resources:
+            {{- toYaml .Values.configserver.resources | nindent 12 }}
+          volumeMounts:
+            - name: vespa-var
+              mountPath: /opt/vespa/var
+            - name: vespa-logs
+              mountPath: /opt/vespa/logs
+            - name: vespa-workspace
+              mountPath: /workspace
+  volumeClaimTemplates:
+    - metadata:
+        name: vespa-var
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: {{ .Values.storageClass | quote }}
+        resources:
+          requests:
+            storage: {{ .Values.configserver.storage.varSize }}
+    - metadata:
+        name: vespa-logs
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: {{ .Values.storageClass | quote }}
+        resources:
+          requests:
+            storage: {{ .Values.configserver.storage.logsSize }}
+    - metadata:
+        name: vespa-workspace
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: {{ .Values.storageClass | quote }}
+        resources:
+          requests:
+            storage: {{ .Values.configserver.storage.workspaceSize }}

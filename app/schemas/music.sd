@@ -1,0 +1,94 @@
+# Vespa ミュージックスキーマ
+# 日本語フィールドには bigram (2-gram) インデックスを使用して日本語検索に対応する
+# Music schema for Vespa
+# Japanese fields use bigram (2-gram) indexing for Japanese language search support
+
+schema music {
+
+    document music {
+
+        # 楽曲タイトル (英語) / Song title (English)
+        field title type string {
+            indexing: summary | index
+            index: enable-bm25
+        }
+
+        # 楽曲タイトル (日本語) — 2-gram インデックスで日本語検索対応
+        # Song title (Japanese) — 2-gram index for Japanese search
+        field title_ja type string {
+            indexing: summary | index
+            match {
+                gram
+                gram-size: 2
+            }
+            index: enable-bm25
+        }
+
+        # アーティスト名 (英語) / Artist name (English)
+        field artist type string {
+            indexing: summary | index
+            index: enable-bm25
+        }
+
+        # アーティスト名 (日本語) / Artist name (Japanese)
+        field artist_ja type string {
+            indexing: summary | index
+            match {
+                gram
+                gram-size: 2
+            }
+        }
+
+        # アルバム名 (英語) / Album name (English)
+        field album type string {
+            indexing: summary | index
+            index: enable-bm25
+        }
+
+        # アルバム名 (日本語) / Album name (Japanese)
+        field album_ja type string {
+            indexing: summary | index
+            match {
+                gram
+                gram-size: 2
+            }
+            index: enable-bm25
+        }
+
+        # リリース年 / Release year
+        field year type int {
+            indexing: summary | attribute
+        }
+
+        # ジャンル / Genre
+        field genre type string {
+            indexing: summary | attribute
+        }
+
+    }
+
+    # デフォルト検索対象フィールドセット (英語フィールド) / Default fieldset for English search
+    fieldset default {
+        fields: title, artist, album
+    }
+
+    # 日本語検索用フィールドセット (2-gram) / Fieldset for Japanese search
+    fieldset default_ja {
+        fields: title_ja, artist_ja, album_ja
+    }
+
+    # デフォルトランキング (nativeRank) / Default ranking profile
+    rank-profile default inherits default {
+        first-phase {
+            expression: nativeRank(title, title_ja, album, album_ja)
+        }
+    }
+
+    # BM25 ランキング / BM25 ranking profile
+    rank-profile bm25 inherits default {
+        first-phase {
+            expression: bm25(title) + bm25(title_ja) + bm25(album) + bm25(album_ja)
+        }
+    }
+
+}

@@ -1,0 +1,43 @@
+# Vespa フィードコンテナ StatefulSet (データ投入用)
+# Feed container StatefulSet (for document ingestion)
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "vespa.fullname" . }}-feed-container
+  labels:
+    {{- include "vespa.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.feedContainer.replicas }}
+  selector:
+    matchLabels:
+      app: {{ include "vespa.fullname" . }}-feed-container
+      name: {{ include "vespa.internalService" . }}
+  serviceName: {{ include "vespa.internalService" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "vespa.fullname" . }}-feed-container
+        name: {{ include "vespa.internalService" . }}
+    spec:
+      containers:
+        - name: vespa-feed-container
+          image: {{ include "vespa.image" . }}
+          args: ["services"]
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            runAsUser: 1000
+          ports:
+            - containerPort: 8080
+              name: http
+          envFrom:
+            - configMapRef:
+                name: {{ include "vespa.fullname" . }}-config
+          readinessProbe:
+            httpGet:
+              path: /state/v1/health
+              port: 8080
+            initialDelaySeconds: 120
+            periodSeconds: 10
+            failureThreshold: 30
+          resources:
+            {{- toYaml .Values.feedContainer.resources | nindent 12 }}
