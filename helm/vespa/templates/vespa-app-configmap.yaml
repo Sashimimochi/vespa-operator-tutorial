@@ -1,0 +1,117 @@
+# Vespa アプリケーションパッケージ ConfigMap
+# values.yaml のレプリカ数に基づいて services.xml と hosts.xml を動的生成する
+# Dynamically generates services.xml and hosts.xml based on replica counts in values.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "vespa.fullname" . }}-app
+  labels:
+    {{- include "vespa.labels" . | nindent 4 }}
+data:
+  services.xml: |
+    <?xml version="1.0" encoding="utf-8" ?>
+    <!-- 自動生成 — values.yaml を変更して helm upgrade / deploy-app を再実行すること -->
+    <!-- Auto-generated — edit values.yaml and re-run helm upgrade / deploy-app -->
+    <services version="1.0">
+
+      <admin version="2.0">
+        <!-- コンフィグサーバー / Config servers -->
+        <configservers>
+{{- range $i := until (.Values.configserver.replicas | int) }}
+          <configserver hostalias="configserver{{ $i }}" />
+{{- end }}
+        </configservers>
+        <!-- クラスターコントローラー / Cluster controller -->
+        <cluster-controllers>
+          <cluster-controller hostalias="configserver0" jvm-options="{{ .Values.configserver.jvmArgs }}" />
+        </cluster-controllers>
+        <!-- サービスディスカバリー / Service discovery (slobrok) -->
+        <slobroks>
+{{- range $i := until (.Values.configserver.replicas | int) }}
+          <slobrok hostalias="configserver{{ $i }}" />
+{{- end }}
+        </slobroks>
+        <adminserver hostalias="admin0" />
+      </admin>
+
+      <!-- フィードコンテナ (データ投入用) / Feed container cluster (for document ingestion) -->
+      <container id="feed" version="1.0">
+        <document-api />
+        <document-processing />
+        <nodes>
+          <!-- jvm options はローカルテスト用 / jvm options for local testing only — remove for production -->
+          <jvm options="{{ .Values.feedContainer.jvmArgs }}" />
+{{- range $i := until (.Values.feedContainer.replicas | int) }}
+          <node hostalias="feed{{ $i }}" />
+{{- end }}
+        </nodes>
+      </container>
+
+      <!-- クエリコンテナ (検索用) / Query container cluster (for search) -->
+      <container id="query" version="1.0">
+        <search />
+        <nodes>
+          <!-- jvm options はローカルテスト用 / jvm options for local testing only — remove for production -->
+          <jvm options="{{ .Values.queryContainer.jvmArgs }}" />
+{{- range $i := until (.Values.queryContainer.replicas | int) }}
+          <node hostalias="query{{ $i }}" />
+{{- end }}
+        </nodes>
+      </container>
+
+      <!-- コンテントクラスター (データ保存) / Content cluster (data storage) -->
+      <content id="music" version="1.0">
+        <min-redundancy>{{ .Values.content.minRedundancy }}</min-redundancy>
+        <documents>
+          <document type="music" mode="index" />
+          <document-processing cluster="feed" />
+        </documents>
+        <nodes>
+{{- range $i := until (.Values.content.replicas | int) }}
+          <node hostalias="content{{ $i }}" distribution-key="{{ $i }}" />
+{{- end }}
+        </nodes>
+      </content>
+
+    </services>
+  hosts.xml: |
+    <?xml version="1.0" encoding="utf-8" ?>
+    <!-- 自動生成 — values.yaml を変更して helm upgrade / deploy-app を再実行すること -->
+    <!-- Auto-generated — edit values.yaml and re-run helm upgrade / deploy-app -->
+    <!-- Pod DNS 形式 / Pod DNS pattern:
+         <release>-<component>-<index>.<release>-internal.<namespace>.svc.cluster.local -->
+    <hosts>
+{{- $release := .Release.Name }}
+{{- $svc := include "vespa.internalService" . }}
+{{- $ns := .Release.Namespace }}
+      <!-- コンフィグサーバー / Config servers -->
+{{- range $i := until (.Values.configserver.replicas | int) }}
+      <host name="{{ $release }}-configserver-{{ $i }}.{{ $svc }}.{{ $ns }}.svc.cluster.local">
+        <alias>configserver{{ $i }}</alias>
+      </host>
+{{- end }}
+      <!-- 管理ノード / Admin nodes -->
+{{- range $i := until (.Values.admin.replicas | int) }}
+      <host name="{{ $release }}-admin-{{ $i }}.{{ $svc }}.{{ $ns }}.svc.cluster.local">
+        <alias>admin{{ $i }}</alias>
+      </host>
+{{- end }}
+      <!-- フィードコンテナ / Feed containers -->
+{{- range $i := until (.Values.feedContainer.replicas | int) }}
+      <host name="{{ $release }}-feed-container-{{ $i }}.{{ $svc }}.{{ $ns }}.svc.cluster.local">
+        <alias>feed{{ $i }}</alias>
+      </host>
+{{- end }}
+      <!-- クエリコンテナ / Query containers -->
+{{- range $i := until (.Values.queryContainer.replicas | int) }}
+      <host name="{{ $release }}-query-container-{{ $i }}.{{ $svc }}.{{ $ns }}.svc.cluster.local">
+        <alias>query{{ $i }}</alias>
+      </host>
+{{- end }}
+      <!-- コンテントノード / Content nodes -->
+{{- range $i := until (.Values.content.replicas | int) }}
+      <host name="{{ $release }}-content-{{ $i }}.{{ $svc }}.{{ $ns }}.svc.cluster.local">
+        <alias>content{{ $i }}</alias>
+      </host>
+{{- end }}
+    </hosts>

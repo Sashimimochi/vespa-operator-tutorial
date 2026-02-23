@@ -66,6 +66,9 @@ queryContainer:
 # Content nodes (for data storage, 2+ recommended for redundancy)
 content:
   replicas: 1
+  # ドキュメント冗長度 (replicas が 1 のときは 1、2 以上のときは 2 を推奨)
+  # Document redundancy (1 for single node, 2 recommended when replicas >= 2)
+  minRedundancy: 1
   resources:
     requests:
       memory: "1G"

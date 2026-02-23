@@ -137,8 +137,20 @@ wait-ready: ## 全 Pod が Ready になるまで待つ / Wait for all pods to be
 # =============================================================================
 .PHONY: deploy-app
 deploy-app: ## Vespa アプリケーションパッケージをデプロイする / Deploy Vespa application package
-	@echo "$(BLUE)>>> アプリケーションパッケージを zip に圧縮しています...$(RESET)" && \
-	cd $(APP_DIR) && zip -r $(APP_ZIP) . -x "*.DS_Store" && \
+	@echo "$(BLUE)>>> Helm テンプレートから services.xml / hosts.xml を生成しています...$(RESET)" && \
+	TMPAPP=/tmp/vespa-app-staging && \
+	rm -rf $$TMPAPP && cp -r $(APP_DIR) $$TMPAPP && \
+	helm template $(HELM_RELEASE) $(HELM_CHART) \
+		--namespace $(NAMESPACE) \
+		--show-only templates/vespa-app-configmap.yaml \
+		> /tmp/vespa-app-cm.yaml && \
+	awk '/^  services[.]xml: [|]/{f=1;next} /^  [^ ]/{f=0} f{sub(/^    /,""); print}' \
+		/tmp/vespa-app-cm.yaml > $$TMPAPP/services.xml && \
+	awk '/^  hosts[.]xml: [|]/{f=1;next} /^  [^ ]/{f=0} f{sub(/^    /,""); print}' \
+		/tmp/vespa-app-cm.yaml > $$TMPAPP/hosts.xml && \
+	rm -f /tmp/vespa-app-cm.yaml && \
+	echo "$(BLUE)>>> アプリケーションパッケージを zip に圧縮しています...$(RESET)" && \
+	cd $$TMPAPP && zip -r $(APP_ZIP) . -x "*.DS_Store" && \
 	echo "$(BLUE)>>> コンフィグサーバーへポートフォワードを開始します...$(RESET)" && \
 	kubectl port-forward pod/$(CONFIGSERVER_POD) $(CONFIG_PORT):19071 --namespace=$(NAMESPACE) & \
 	PF_PID=$$!; \
