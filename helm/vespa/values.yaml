@@ -30,6 +30,8 @@ configserver:
   # JVM オプション (ローカル開発用に小さく設定 / Small for local dev — remove for production)
   jvmArgs: "-Xms32M -Xmx128M"
   configProxyJvmArgs: "-Xms32M -Xmx32M"
+  # クラスターコントローラー JVM オプション (ローカル開発用 / Local dev only — remove for production)
+  clusterControllerJvmArgs: "-Xms32M -Xmx64M"
 
 # 管理ノード / Admin node
 admin:

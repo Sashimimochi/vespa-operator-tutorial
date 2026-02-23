@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <!-- Vespa ホスト設定ファイル / Vespa hosts configuration
-     Kubernetes StatefulSet の Pod DNS 名とホストエイリアスのマッピング
-     Mapping of Kubernetes StatefulSet pod DNS names to host aliases
+     このファイルは make deploy-app 実行時に Helm ConfigMap (vespa-app-config) から
+     自動生成されます。直接編集しないでください。
+     This file is auto-generated from the Helm ConfigMap (vespa-app-config) when running
+     make deploy-app. Do not edit manually.
 
-     注意: Helm リリース名を "vespa" 以外にした場合はこのファイルも合わせて変更すること
-     Note: If the Helm release name is changed from "vespa", update this file accordingly
-
-     Pod DNS 形式 / Pod DNS pattern:
-     <release>-<component>-<index>.<release>-internal.<namespace>.svc.cluster.local
+     レプリカ数の変更は helm/vespa/values.yaml を編集してください。
+     To change replica counts, edit helm/vespa/values.yaml and run helm upgrade.
 -->
 <hosts>
   <!-- コンフィグサーバー / Config server (node0) -->

@@ -137,7 +137,12 @@ wait-ready: ## 全 Pod が Ready になるまで待つ / Wait for all pods to be
 # =============================================================================
 .PHONY: deploy-app
 deploy-app: ## Vespa アプリケーションパッケージをデプロイする / Deploy Vespa application package
-	@echo "$(BLUE)>>> アプリケーションパッケージを zip に圧縮しています...$(RESET)" && \
+	@echo "$(BLUE)>>> hosts.xml と services.xml を ConfigMap から生成しています...$(RESET)" && \
+	kubectl get configmap $(HELM_RELEASE)-app-config --namespace=$(NAMESPACE) -o json \
+		> /tmp/vespa-app-cm.json && \
+	python3 -c "import json; d=json.load(open('/tmp/vespa-app-cm.json')); open('$(APP_DIR)/hosts.xml','w').write(d['data']['hosts.xml']); open('$(APP_DIR)/services.xml','w').write(d['data']['services.xml'])" && \
+	rm -f /tmp/vespa-app-cm.json && \
+	echo "$(BLUE)>>> アプリケーションパッケージを zip に圧縮しています...$(RESET)" && \
 	cd $(APP_DIR) && zip -r $(APP_ZIP) . -x "*.DS_Store" && \
 	echo "$(BLUE)>>> コンフィグサーバーへポートフォワードを開始します...$(RESET)" && \
 	kubectl port-forward pod/$(CONFIGSERVER_POD) $(CONFIG_PORT):19071 --namespace=$(NAMESPACE) & \

@@ -1,7 +1,13 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <!-- Vespa サービス設定ファイル / Vespa services configuration
-     ノード数は hosts.xml のエイリアスと一致させること
-     Node counts must match the aliases defined in hosts.xml -->
+     このファイルは make deploy-app 実行時に Helm ConfigMap (vespa-app-config) から
+     自動生成されます。直接編集しないでください。
+     This file is auto-generated from the Helm ConfigMap (vespa-app-config) when running
+     make deploy-app. Do not edit manually.
+
+     レプリカ数の変更は helm/vespa/values.yaml を編集してください。
+     To change replica counts, edit helm/vespa/values.yaml and run helm upgrade.
+-->
 <services version="1.0">
 
   <admin version="2.0">

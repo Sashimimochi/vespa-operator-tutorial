@@ -157,8 +157,8 @@ make deploy-app
 | ファイル | 説明 |
 |---|---|
 | `app/schemas/music.sd` | 音楽ドキュメントスキーマ (日本語 bigram 対応) |
-| `app/services.xml` | クラストポロジー定義 |
-| `app/hosts.xml` | Pod DNS ↔ ホストエイリアス マッピング |
+| `app/services.xml` | デプロイ時に ConfigMap から自動生成 (直接編集不要) |
+| `app/hosts.xml` | デプロイ時に ConfigMap から自動生成 (直接編集不要) |
 
 ### ステップ 6: サンプルデータの投入
 
@@ -230,16 +230,16 @@ helm upgrade vespa ./helm/vespa \
     --set queryContainer.replicas=3
 ```
 
-> **注意**: `content.replicas` を変更した場合は、`app/services.xml` と `app/hosts.xml` も  
-> 合わせて更新し、`make deploy-app` を再実行してください。
+`helm upgrade` を実行すると、StatefulSet のレプリカ数が変更されるとともに、
+`vespa-app-config` ConfigMap 内の `hosts.xml` と `services.xml` も自動的に更新されます。
+その後 `make deploy-app` を実行すると、最新の ConfigMap から XML ファイルが取得され
+Vespa クラスターに反映されます。
 
 ### 別の名前空間での使用
 
 ```bash
 make install NAMESPACE=vespa-system
 ```
-
-> `app/hosts.xml` の `.svc.cluster.local` 前の `default` も変更してください。
 
 ### Helm チャートのテンプレート確認
 
@@ -308,6 +308,7 @@ vespa-operator-tutorial/
 │       └── templates/
 │           ├── _helpers.tpl   # テンプレートヘルパー関数
 │           ├── configmap.yaml # VESPA_CONFIGSERVERS 設定
+│           ├── app-config.yaml# hosts.xml / services.xml 動的生成 ConfigMap
 │           ├── services.yaml  # ヘッドレス/フィード/クエリ サービス
 │           ├── configserver.yaml
 │           ├── admin.yaml
@@ -317,8 +318,8 @@ vespa-operator-tutorial/
 ├── app/                       # Vespa アプリケーションパッケージ
 │   ├── schemas/
 │   │   └── music.sd           # 音楽スキーマ (日本語 bigram 対応)
-│   ├── services.xml           # クラストポロジー定義
-│   └── hosts.xml              # Pod DNS ↔ ホストエイリアス
+│   ├── services.xml           # deploy-app 時に自動生成 (直接編集不要)
+│   └── hosts.xml              # deploy-app 時に自動生成 (直接編集不要)
 └── data/
     └── feed.json              # サンプル音楽データ (日本語対応)
 ```

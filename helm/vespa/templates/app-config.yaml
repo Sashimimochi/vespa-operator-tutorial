@@ -1,0 +1,15 @@
+# Vespa アプリケーション設定 ConfigMap
+# レプリカ数に基づいて hosts.xml と services.xml を動的生成する
+# Application config ConfigMap — dynamically generates hosts.xml and services.xml
+# based on replica counts in values.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "vespa.fullname" . }}-app-config
+  labels:
+    {{- include "vespa.labels" . | nindent 4 }}
+data:
+  hosts.xml: |
+{{- include "vespa.hostsXml" . | nindent 4 }}
+  services.xml: |
+{{- include "vespa.servicesXml" . | nindent 4 }}
