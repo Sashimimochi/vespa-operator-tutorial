@@ -83,6 +83,16 @@ install: ## Helm で Vespa クラスターをインストールする / Install 
 	@echo "$(GREEN)>>> Helm インストールが完了しました$(RESET)"
 	@echo "Pod の起動状況を確認するには: make status"
 
+.PHONY: upgrade
+upgrade: ## values.yaml の変更を反映し hosts.xml/services.xml を再生成してアプリを再デプロイ / Upgrade Helm release and redeploy app with regenerated XML
+	@$(MAKE) deploy-app
+	@echo "$(BLUE)>>> Helm チャートをアップグレードしています...$(RESET)"
+	helm upgrade $(HELM_RELEASE) $(HELM_CHART) \
+		--namespace $(NAMESPACE)
+	@echo "$(GREEN)>>> Helm アップグレードが完了しました$(RESET)"
+	@$(MAKE) wait-ready
+	@$(MAKE) wait-app
+
 # =============================================================================
 # 3. コンフィグサーバーの起動待ち / Wait for config servers
 # =============================================================================

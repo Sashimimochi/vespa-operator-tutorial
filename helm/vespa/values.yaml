@@ -17,7 +17,7 @@ namespace: default
 # コンフィグサーバー (ZooKeeper クォーラムのため 3 台を推奨)
 # Config servers (3 recommended for ZooKeeper quorum)
 configserver:
-  replicas: 1
+  replicas: 3
   resources:
     requests:
       memory: "1G"
@@ -65,10 +65,10 @@ queryContainer:
 # コンテントノード (データ保存用、冗長化のため 2 台以上を推奨)
 # Content nodes (for data storage, 2+ recommended for redundancy)
 content:
-  replicas: 1
+  replicas: 2
   # ドキュメント冗長度 (replicas が 1 のときは 1、2 以上のときは 2 を推奨)
   # Document redundancy (1 for single node, 2 recommended when replicas >= 2)
-  minRedundancy: 1
+  minRedundancy: 2
   resources:
     requests:
       memory: "1G"
