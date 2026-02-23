@@ -10,3 +10,6 @@ data:
   VESPA_CONFIGSERVERS: {{ include "vespa.configservers" . | quote }}
   VESPA_CONFIGSERVER_JVMARGS: {{ .Values.configserver.jvmArgs | quote }}
   VESPA_CONFIGPROXY_JVMARGS: {{ .Values.configserver.configProxyJvmArgs | quote }}
+  # ローカル開発環境向け: 4GB メモリチェックをスキップ
+  # For local dev: skip the 4GB available-memory check
+  VESPA_IGNORE_NOT_ENOUGH_MEMORY: {{ .Values.ignoreNotEnoughMemory | default "true" | quote }}

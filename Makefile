@@ -60,7 +60,7 @@ help: ## コマンド一覧 / Show available commands
 # 全ステップ一括実行 / Run all steps
 # =============================================================================
 .PHONY: all
-all: create-cluster install wait-configserver start-services wait-ready deploy-app wait-app feed ## 全ステップを順番に実行 / Run full setup end to end
+all: create-cluster install wait-configserver start-services deploy-app wait-ready wait-app feed ## 全ステップを順番に実行 / Run full setup end to end
 
 # =============================================================================
 # 1. kind クラスター作成 / Create kind cluster
@@ -88,13 +88,28 @@ install: ## Helm で Vespa クラスターをインストールする / Install 
 # =============================================================================
 .PHONY: wait-configserver
 wait-configserver: ## コンフィグサーバーの起動を待つ / Wait for config servers to be ready
-	@echo "$(BLUE)>>> コンフィグサーバーの起動を待っています (最大 5 分)...$(RESET)"
-	kubectl wait pod/$(CONFIGSERVER_POD) \
+	@echo "$(BLUE)>>> Pod の起動を待っています (60 秒)...$(RESET)"
+	@sleep 60
+	@echo "$(BLUE)>>> 全コンフィグサーバー Pod (3 台) の Ready を待っています (最大 8 分)...$(RESET)"
+	kubectl wait pod \
+		-l app=$(HELM_RELEASE)-configserver \
 		--for=condition=Ready \
-		--timeout=300s \
+		--timeout=480s \
 		--namespace=$(NAMESPACE)
-	@echo "$(GREEN)>>> コンフィグサーバーが起動しました$(RESET)"
-	@$(MAKE) check-configserver-health
+	@echo "$(GREEN)>>> 全コンフィグサーバー Pod が Ready になりました$(RESET)"
+	@echo "$(BLUE)>>> コンフィグサーバー HTTP API (port 19071) の応答を待っています (最大 5 分)...$(RESET)"
+	@for i in $$(seq 1 30); do \
+		STATUS=$$(kubectl exec $(CONFIGSERVER_POD) --namespace=$(NAMESPACE) -- \
+			curl -sf http://localhost:19071/state/v1/health 2>/dev/null | \
+			python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status',{}).get('code','unknown'))" 2>/dev/null); \
+		echo "コンフィグサーバー状態: $${STATUS:-unknown} (試行 $$i/30)"; \
+		if [ "$$STATUS" = "up" ]; then \
+			echo "$(GREEN)>>> コンフィグサーバーが起動しました$(RESET)"; \
+			exit 0; \
+		fi; \
+		if [ $$i -eq 30 ]; then echo "タイムアウト: コンフィグサーバーが応答しません"; exit 1; fi; \
+		sleep 10; \
+	done
 
 # =============================================================================
 # 4. その他のサービス (必要に応じて手動で実行) / Start additional services
@@ -129,15 +144,29 @@ deploy-app: ## Vespa アプリケーションパッケージをデプロイす�
 	PF_PID=$$!; \
 	sleep 5; \
 	echo "$(BLUE)>>> アプリケーションをデプロイしています...$(RESET)"; \
-	curl --silent --show-error \
-		--header "Content-Type: application/zip" \
-		--data-binary @$(APP_ZIP) \
-		http://localhost:$(CONFIG_PORT)/application/v2/tenant/default/prepareandactivate | \
-		python3 -m json.tool; \
-	DEPLOY_STATUS=$$?; \
+	DEPLOY_STATUS=1; \
+	for i in $$(seq 1 5); do \
+		RESULT=$$(curl --silent --show-error \
+			--header "Content-Type: application/zip" \
+			--data-binary @$(APP_ZIP) \
+			http://localhost:$(CONFIG_PORT)/application/v2/tenant/default/prepareandactivate 2>&1); \
+		CURL_STATUS=$$?; \
+		if [ $$CURL_STATUS -eq 0 ] && echo "$$RESULT" | python3 -c "import sys,json; d=json.load(sys.stdin); sys.exit(0 if 'session' in str(d) or 'log' in str(d) else 1)" 2>/dev/null; then \
+			echo "$$RESULT" | python3 -m json.tool 2>/dev/null || echo "$$RESULT"; \
+			DEPLOY_STATUS=0; \
+			break; \
+		fi; \
+		echo "デプロイ試行 $$i/5 失敗 (curl exit: $$CURL_STATUS)、10 秒後に再試行..."; \
+		echo "$$RESULT" | python3 -m json.tool 2>/dev/null || echo "$$RESULT"; \
+		sleep 10; \
+	done; \
 	kill $$PF_PID 2>/dev/null || true; \
 	rm -f $(APP_ZIP); \
-	echo "$(GREEN)>>> アプリケーションのデプロイが完了しました$(RESET)"; \
+	if [ $$DEPLOY_STATUS -eq 0 ]; then \
+		echo "$(GREEN)>>> アプリケーションのデプロイが完了しました$(RESET)"; \
+	else \
+		echo "デプロイ失敗。make check-configserver-health で状態を確認してください。"; \
+	fi; \
 	exit $$DEPLOY_STATUS
 
 # =============================================================================

@@ -77,3 +77,7 @@ content:
 # ストレージクラス (kind はデフォルトで "standard" を提供する)
 # Storage class (kind provides "standard" by default)
 storageClass: "standard"
+
+# ローカル開発環境向け: 4GB メモリチェックをスキップ (本番では false を推奨)
+# For local dev: skip Vespa's 4GB memory check (set false in production)
+ignoreNotEnoughMemory: "true"

@@ -1,5 +1,7 @@
 # Vespa 内部通信用ヘッドレスサービス (StatefulSet の DNS 解決に使用)
 # Headless service for Vespa internal communication (used for StatefulSet DNS resolution)
+# publishNotReadyAddresses: true — Not Ready な Pod の DNS も公開する
+# (Vespa は双方向疎通チェックを行うため、Ready になる前から hostname で到達可能である必要がある)
 apiVersion: v1
 kind: Service
 metadata:
@@ -9,6 +11,7 @@ metadata:
     name: {{ include "vespa.internalService" . }}
 spec:
   clusterIP: None
+  publishNotReadyAddresses: true
   selector:
     name: {{ include "vespa.internalService" . }}
 ---
