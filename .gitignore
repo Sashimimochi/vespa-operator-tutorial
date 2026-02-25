@@ -17,3 +17,5 @@
 
 # ポートフォワード PID ファイル / Port-forward PID files
 *.pid
+# ポートフォワード ログファイル / Port-forward log files
+.port-forward.log

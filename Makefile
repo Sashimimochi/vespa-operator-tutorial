@@ -27,6 +27,10 @@ QUERY_PORT   := 8081
 APP_DIR  := ./app
 APP_ZIP  := /tmp/vespa-app.zip
 
+# ポートフォワード管理ファイル / Port-forward management files
+PORT_FORWARD_PID_FILE ?= .port-forward.pid
+PORT_FORWARD_LOG_FILE ?= .port-forward.log
+
 # --- ヘルパー / Helpers ---
 BOLD  := \033[1m
 RESET := \033[0m
@@ -60,7 +64,7 @@ help: ## コマンド一覧 / Show available commands
 # 全ステップ一括実行 / Run all steps
 # =============================================================================
 .PHONY: all
-all: create-cluster install wait-configserver start-services deploy-app wait-ready wait-app feed ## 全ステップを順番に実行 / Run full setup end to end
+all: create-cluster install wait-configserver start-services deploy-app wait-ready wait-app port-forward feed ## 全ステップを順番に実行 / Run full setup end to end
 
 # =============================================================================
 # 1. kind クラスター作成 / Create kind cluster
@@ -312,6 +316,46 @@ search-ja: ## 日本語キーワードで検索する (例: ロック) / Search 
 		python3 -m json.tool; \
 	kill $$PF_PID 2>/dev/null || true
 
+.PHONY: port-forward
+port-forward: ## バックグラウンドでポートフォワードを開始する (自動再起動付き) / Start background port-forward with auto-restart
+	@if [ -f "$(PORT_FORWARD_PID_FILE)" ] && ps -p "$$(cat "$(PORT_FORWARD_PID_FILE)")" >/dev/null 2>&1; then \
+		echo "ポートフォワードは既に起動中です (pid=$$(cat "$(PORT_FORWARD_PID_FILE)"))"; \
+		exit 0; \
+	fi
+	@rm -f "$(PORT_FORWARD_LOG_FILE)"
+	@( while true; do \
+		kubectl port-forward pod/$(CONFIGSERVER_POD) $(CONFIG_PORT):19071 --namespace=$(NAMESPACE) >> "$(PORT_FORWARD_LOG_FILE)" 2>&1 & \
+		PF1=$$!; \
+		kubectl port-forward svc/$(FEED_SVC) $(FEED_PORT):8080 --namespace=$(NAMESPACE) >> "$(PORT_FORWARD_LOG_FILE)" 2>&1 & \
+		PF2=$$!; \
+		kubectl port-forward svc/$(QUERY_SVC) $(QUERY_PORT):8080 --namespace=$(NAMESPACE) >> "$(PORT_FORWARD_LOG_FILE)" 2>&1 & \
+		PF3=$$!; \
+		wait $$PF1 $$PF2 $$PF3; \
+		echo "[port-forward] 再起動中 (3 秒後)..." >> "$(PORT_FORWARD_LOG_FILE)"; \
+		sleep 3; \
+	done ) & echo $$! > "$(PORT_FORWARD_PID_FILE)"
+	@sleep 3
+	@echo "$(GREEN)>>> ポートフォワード (自動再起動) を開始しました (pid=$$(cat "$(PORT_FORWARD_PID_FILE)"), log=$(PORT_FORWARD_LOG_FILE))$(RESET)"
+	@echo "  config: localhost:$(CONFIG_PORT) -> configserver:19071"
+	@echo "  feed  : localhost:$(FEED_PORT)   -> feed:8080"
+	@echo "  query : localhost:$(QUERY_PORT)  -> query:8080"
+
+.PHONY: stop-port-forward
+stop-port-forward: ## バックグラウンドのポートフォワードを停止する / Stop background port-forward
+	@if [ -f "$(PORT_FORWARD_PID_FILE)" ]; then \
+		PID=$$(cat "$(PORT_FORWARD_PID_FILE)"); \
+		if ps -p "$$PID" >/dev/null 2>&1; then \
+			pkill -P "$$PID" 2>/dev/null || true; \
+			kill "$$PID" 2>/dev/null || true; \
+			echo "ポートフォワードを停止しました (pid=$$PID)"; \
+		else \
+			echo "ポートフォワードは起動していません"; \
+		fi; \
+		rm -f "$(PORT_FORWARD_PID_FILE)"; \
+	else \
+		echo "ポートフォワードは起動していません"; \
+	fi
+
 # =============================================================================
 # ユーティリティ / Utilities
 # =============================================================================
@@ -383,7 +427,7 @@ uninstall: ## Vespa の Helm リリースを削除する / Uninstall Vespa Helm 
 	kubectl delete pvc --all --namespace=$(NAMESPACE) --ignore-not-found=true
 
 .PHONY: clean
-clean: ## kind クラスターを含む全リソースを削除する / Delete all resources including kind cluster
+clean: stop-port-forward ## kind クラスターを含む全リソースを削除する / Delete all resources including kind cluster
 	@echo "$(BLUE)>>> 全リソースを削除しています...$(RESET)"
 	-helm uninstall $(HELM_RELEASE) --namespace=$(NAMESPACE) 2>/dev/null || true
 	-kubectl delete pvc --all --namespace=$(NAMESPACE) 2>/dev/null || true
