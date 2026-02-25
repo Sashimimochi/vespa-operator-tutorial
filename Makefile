@@ -221,6 +221,72 @@ feed: ## サンプルデータを Vespa に投入する / Feed sample data to Ve
 	fi
 
 # =============================================================================
+# スケール / Scale (無停止レプリカ数変更 / Zero-downtime replica count change)
+# =============================================================================
+# 使い方 / Usage:
+#   values.yaml でレプリカ数を変更後に実行してください
+#   Edit replica counts in values.yaml, then run:
+#     make scale
+# 実行順序 / Execution order:
+#   1. Helm テンプレートから新 services.xml / hosts.xml を生成 (K8s 未適用)
+#   2. Vespa config server へ新アプリ設定をデプロイ (無停止・prepareandactivate)
+#   3. helm upgrade で Kubernetes StatefulSet をスケール
+# =============================================================================
+.PHONY: scale
+scale: ## values.yaml のレプリカ数変更を無停止で反映する / Apply replica changes zero-downtime
+	@echo "$(BLUE)>>> [1/3] values.yaml の新しいレプリカ数から services.xml / hosts.xml を生成しています...$(RESET)"
+	@TMPFILE=$$(mktemp); \
+	helm template $(HELM_RELEASE) $(HELM_CHART) --namespace $(NAMESPACE) \
+		-s templates/app-config.yaml > $$TMPFILE && \
+	awk '/^  hosts\.xml: \|/{f=1;next} /^  [a-zA-Z]/{f=0} f{sub(/^    /,"");print}' \
+		$$TMPFILE > $(APP_DIR)/hosts.xml && \
+	awk '/^  services\.xml: \|/{f=1;next} /^  [a-zA-Z]/{f=0} f{sub(/^    /,"");print}' \
+		$$TMPFILE > $(APP_DIR)/services.xml && \
+	rm -f $$TMPFILE && \
+	echo "hosts.xml / services.xml を更新しました"
+	@echo "$(BLUE)>>> [2/3] 新しいアプリ設定を Vespa へデプロイしています (無停止)...$(RESET)" && \
+	cd $(APP_DIR) && zip -r $(APP_ZIP) . -x "*.DS_Store" && \
+	kubectl port-forward pod/$(CONFIGSERVER_POD) $(CONFIG_PORT):19071 --namespace=$(NAMESPACE) & \
+	PF_PID=$$!; \
+	sleep 5; \
+	DEPLOY_STATUS=1; \
+	for i in $$(seq 1 5); do \
+		RESULT=$$(curl --silent --show-error \
+			--header "Content-Type: application/zip" \
+			--data-binary @$(APP_ZIP) \
+			http://localhost:$(CONFIG_PORT)/application/v2/tenant/default/prepareandactivate 2>&1); \
+		CURL_STATUS=$$?; \
+		if [ $$CURL_STATUS -eq 0 ] && echo "$$RESULT" | python3 -c "import sys,json; d=json.load(sys.stdin); sys.exit(0 if 'session' in str(d) or 'log' in str(d) else 1)" 2>/dev/null; then \
+			echo "$$RESULT" | python3 -m json.tool 2>/dev/null || echo "$$RESULT"; \
+			DEPLOY_STATUS=0; \
+			break; \
+		fi; \
+		echo "デプロイ試行 $$i/5 失敗 (curl exit: $$CURL_STATUS)、10 秒後に再試行..."; \
+		echo "$$RESULT" | python3 -m json.tool 2>/dev/null || echo "$$RESULT"; \
+		sleep 10; \
+	done; \
+	kill $$PF_PID 2>/dev/null || true; \
+	rm -f $(APP_ZIP); \
+	if [ $$DEPLOY_STATUS -ne 0 ]; then \
+		echo "Vespa へのデプロイに失敗しました。helm upgrade は中断します。"; \
+		exit 1; \
+	fi; \
+	echo "$(GREEN)>>> [2/3] Vespa へのアプリデプロイが完了しました$(RESET)"
+	@echo "$(BLUE)>>> Vespa がコンフィグを反映するまで待っています (30 秒)...$(RESET)"
+	@sleep 30
+	@echo "$(BLUE)>>> [3/3] Kubernetes マニフェストを適用しています (helm upgrade)...$(RESET)"
+	@helm upgrade $(HELM_RELEASE) $(HELM_CHART) --namespace $(NAMESPACE)
+	@echo "$(GREEN)>>> helm upgrade が完了しました$(RESET)"
+	@echo "$(BLUE)>>> StatefulSet のロールアウト完了を待っています (最大 10 分)...$(RESET)"
+	@kubectl rollout status statefulset/$(HELM_RELEASE)-content \
+		--namespace=$(NAMESPACE) --timeout=600s 2>/dev/null || true
+	@kubectl rollout status statefulset/$(HELM_RELEASE)-feed-container \
+		--namespace=$(NAMESPACE) --timeout=600s 2>/dev/null || true
+	@kubectl rollout status statefulset/$(HELM_RELEASE)-query-container \
+		--namespace=$(NAMESPACE) --timeout=600s 2>/dev/null || true
+	@echo "$(GREEN)>>> スケール完了。make status で Pod の状態を確認してください$(RESET)"
+
+# =============================================================================
 # 検索 / Search
 # =============================================================================
 .PHONY: search
