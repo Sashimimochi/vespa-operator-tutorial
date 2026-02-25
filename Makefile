@@ -289,7 +289,7 @@ search: ## 全ドキュメントを検索する / Search all documents
 	sleep 5; \
 	curl -s \
 		"http://localhost:$(QUERY_PORT)/search/?yql=select+*+from+music+where+true&hits=20" | \
-		python3 -m json.tool; \
+		python3 -c "import json,sys; print(json.dumps(json.load(sys.stdin), ensure_ascii=False, indent=2))"; \
 	kill $$PF_PID 2>/dev/null || true
 
 .PHONY: search-rock
@@ -300,7 +300,7 @@ search-rock: ## "Rock" ジャンルを検索する / Search Rock genre
 	sleep 5; \
 	curl -s \
 		"http://localhost:$(QUERY_PORT)/search/?yql=select+*+from+music+where+genre+contains+%22Rock%22&hits=10" | \
-		python3 -m json.tool; \
+		python3 -c "import json,sys; print(json.dumps(json.load(sys.stdin), ensure_ascii=False, indent=2))"; \
 	kill $$PF_PID 2>/dev/null || true
 
 .PHONY: search-ja
@@ -313,7 +313,7 @@ search-ja: ## 日本語キーワードで検索する (例: ロック) / Search 
 	curl -s --data-urlencode "yql=select * from music where title_ja contains \"$$KEYWORD\" or album_ja contains \"$$KEYWORD\"" \
 		--data-urlencode "hits=10" \
 		"http://localhost:$(QUERY_PORT)/search/" | \
-		python3 -m json.tool; \
+		python3 -c "import json,sys; print(json.dumps(json.load(sys.stdin), ensure_ascii=False, indent=2))"; \
 	kill $$PF_PID 2>/dev/null || true
 
 .PHONY: port-forward
