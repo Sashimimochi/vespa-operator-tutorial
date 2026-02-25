@@ -1,5 +1,0 @@
-{
-  "name": "vespa-operator-tutorial",
-  "version": "1.0.1",
-  "description": "Kubernetes 上で Vespa 検索エンジンのクラスターを構築するチュートリアル"
-}
