@@ -83,15 +83,23 @@ install: ## Helm で Vespa クラスターをインストールする / Install 
 	@echo "$(GREEN)>>> Helm インストールが完了しました$(RESET)"
 	@echo "Pod の起動状況を確認するには: make status"
 
-.PHONY: upgrade
-upgrade: ## values.yaml の変更を反映し hosts.xml/services.xml を再生成してアプリを再デプロイ / Upgrade Helm release and redeploy app with regenerated XML
-	@$(MAKE) deploy-app
-	@echo "$(BLUE)>>> Helm チャートをアップグレードしています...$(RESET)"
-	helm upgrade $(HELM_RELEASE) $(HELM_CHART) \
-		--namespace $(NAMESPACE)
-	@echo "$(GREEN)>>> Helm アップグレードが完了しました$(RESET)"
-	@$(MAKE) wait-ready
-	@$(MAKE) wait-app
+# =============================================================================
+# 共通: Helm テンプレートから XML を生成 / Generate XML from Helm templates (shared)
+# =============================================================================
+.PHONY: generate-app-xml
+generate-app-xml: ## Helm テンプレートから services.xml / hosts.xml を生成する / Generate app XMLs from Helm templates
+	@echo "$(BLUE)>>> Helm テンプレートから services.xml / hosts.xml を生成しています...$(RESET)" && \
+	TMPFILE=$$(mktemp) && \
+	helm template $(HELM_RELEASE) $(HELM_CHART) \
+		--namespace $(NAMESPACE) \
+		--show-only templates/vespa-app-configmap.yaml \
+		> $$TMPFILE && \
+	awk '/^  services[.]xml: [|]/{f=1;next} /^  [^ ]/{f=0} f{sub(/^    /,""); print}' \
+		$$TMPFILE > $(APP_DIR)/services.xml && \
+	awk '/^  hosts[.]xml: [|]/{f=1;next} /^  [^ ]/{f=0} f{sub(/^    /,""); print}' \
+		$$TMPFILE > $(APP_DIR)/hosts.xml && \
+	rm -f $$TMPFILE && \
+	echo "$(GREEN)>>> services.xml / hosts.xml の生成が完了しました$(RESET)"
 
 # =============================================================================
 # 3. コンフィグサーバーの起動待ち / Wait for config servers
@@ -143,24 +151,30 @@ wait-ready: ## 全 Pod が Ready になるまで待つ / Wait for all pods to be
 	@echo "$(GREEN)>>> 全 Pod が Ready 状態になりました$(RESET)"
 
 # =============================================================================
+# 共通: StatefulSet ロールアウト待機 / Wait for StatefulSet rollouts (shared)
+# =============================================================================
+.PHONY: wait-rollout
+wait-rollout: ## 各 StatefulSet のロールアウト完了を待つ / Wait for StatefulSet rollouts to complete
+	@echo "$(BLUE)>>> StatefulSet のロールアウト完了を待っています (最大 10 分)...$(RESET)"
+	@kubectl rollout status statefulset/$(HELM_RELEASE)-configserver \
+		--namespace=$(NAMESPACE) --timeout=600s || true
+	@kubectl rollout status statefulset/$(HELM_RELEASE)-admin \
+		--namespace=$(NAMESPACE) --timeout=600s || true
+	@kubectl rollout status statefulset/$(HELM_RELEASE)-feed-container \
+		--namespace=$(NAMESPACE) --timeout=600s || true
+	@kubectl rollout status statefulset/$(HELM_RELEASE)-query-container \
+		--namespace=$(NAMESPACE) --timeout=600s || true
+	@kubectl rollout status statefulset/$(HELM_RELEASE)-content \
+		--namespace=$(NAMESPACE) --timeout=600s || true
+	@echo "$(GREEN)>>> 全 StatefulSet のロールアウトが完了しました$(RESET)"
+
+# =============================================================================
 # 6. Vespa アプリケーションのデプロイ / Deploy Vespa application
 # =============================================================================
 .PHONY: deploy-app
-deploy-app: ## Vespa アプリケーションパッケージをデプロイする / Deploy Vespa application package
-	@echo "$(BLUE)>>> Helm テンプレートから services.xml / hosts.xml を生成しています...$(RESET)" && \
-	TMPAPP=/tmp/vespa-app-staging && \
-	rm -rf $$TMPAPP && cp -r $(APP_DIR) $$TMPAPP && \
-	helm template $(HELM_RELEASE) $(HELM_CHART) \
-		--namespace $(NAMESPACE) \
-		--show-only templates/vespa-app-configmap.yaml \
-		> /tmp/vespa-app-cm.yaml && \
-	awk '/^  services[.]xml: [|]/{f=1;next} /^  [^ ]/{f=0} f{sub(/^    /,""); print}' \
-		/tmp/vespa-app-cm.yaml > $$TMPAPP/services.xml && \
-	awk '/^  hosts[.]xml: [|]/{f=1;next} /^  [^ ]/{f=0} f{sub(/^    /,""); print}' \
-		/tmp/vespa-app-cm.yaml > $$TMPAPP/hosts.xml && \
-	rm -f /tmp/vespa-app-cm.yaml && \
-	echo "$(BLUE)>>> アプリケーションパッケージを zip に圧縮しています...$(RESET)" && \
-	cd $$TMPAPP && zip -r $(APP_ZIP) . -x "*.DS_Store" && \
+deploy-app: generate-app-xml ## Vespa アプリケーションパッケージをデプロイする / Deploy Vespa application package
+	@echo "$(BLUE)>>> アプリケーションパッケージを zip に圧縮しています...$(RESET)" && \
+	cd $(APP_DIR) && zip -r $(APP_ZIP) . -x "*.DS_Store" && \
 	echo "$(BLUE)>>> コンフィグサーバーへポートフォワードを開始します...$(RESET)" && \
 	kubectl port-forward pod/$(CONFIGSERVER_POD) $(CONFIG_PORT):19071 --namespace=$(NAMESPACE) & \
 	PF_PID=$$!; \
@@ -190,6 +204,29 @@ deploy-app: ## Vespa アプリケーションパッケージをデプロイす�
 		echo "デプロイ失敗。make check-configserver-health で状態を確認してください。"; \
 	fi; \
 	exit $$DEPLOY_STATUS
+
+# =============================================================================
+# スケール / Scale (無停止レプリカ数変更 / Zero-downtime replica count change)
+# =============================================================================
+# 使い方 / Usage:
+#   values.yaml でレプリカ数を変更後に実行してください
+#   Edit replica counts in values.yaml, then run:
+#     make scale
+# 実行順序 / Execution order:
+#   1. Helm テンプレートから新 services.xml / hosts.xml を生成して Vespa へデプロイ (無停止)
+#   2. Vespa がコンフィグを反映するまで 30 秒待機
+#   3. helm upgrade で Kubernetes StatefulSet をスケール
+#   4. 各 StatefulSet のロールアウト完了待ち
+# =============================================================================
+.PHONY: scale
+scale: deploy-app ## values.yaml のレプリカ数変更を無停止で反映する / Apply replica changes zero-downtime
+	@echo "$(BLUE)>>> [2/4] Vespa がコンフィグを反映するまで待っています (30 秒)...$(RESET)"
+	@sleep 30
+	@echo "$(BLUE)>>> [3/4] Kubernetes マニフェストを適用しています (helm upgrade)...$(RESET)"
+	helm upgrade $(HELM_RELEASE) $(HELM_CHART) --namespace $(NAMESPACE)
+	@echo "$(GREEN)>>> helm upgrade が完了しました$(RESET)"
+	@$(MAKE) wait-rollout
+	@echo "$(GREEN)>>> スケール完了。make status で Pod の状態を確認してください$(RESET)"
 
 # =============================================================================
 # 7. アプリケーション起動待ち / Wait for app to be ready
