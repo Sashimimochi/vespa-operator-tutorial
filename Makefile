@@ -175,7 +175,7 @@ wait-rollout: ## 各 StatefulSet のロールアウト完了を待つ / Wait for
 deploy-app: generate-app-xml ## Vespa アプリケーションパッケージをデプロイする / Deploy Vespa application package
 	@echo "$(BLUE)>>> アプリケーションパッケージを zip に圧縮しています...$(RESET)" && \
 	cd $(APP_DIR) && zip -r $(APP_ZIP) . -x "*.DS_Store" && \
-	echo "$(BLUE)>>> コンフィグサーバーへポートフォワードを開始します...$(RESET)" && \
+	echo "$(BLUE)>>> コンフィグサーバーへポートフォワードを開始します...$(RESET)"; \
 	kubectl port-forward pod/$(CONFIGSERVER_POD) $(CONFIG_PORT):19071 --namespace=$(NAMESPACE) & \
 	PF_PID=$$!; \
 	sleep 5; \
@@ -235,7 +235,7 @@ scale: deploy-app ## values.yaml のレプリカ数変更を無停止で反映�
 wait-app: ## アプリケーション起動後の健全性チェックを待つ / Wait for application health
 	@echo "$(BLUE)>>> アプリケーションの起動を待っています (60 秒)...$(RESET)"
 	@sleep 60
-	@echo "$(BLUE)>>> フィードコンテナの健全性を確認しています...$(RESET)" && \
+	@echo "$(BLUE)>>> フィードコンテナの健全性を確認しています...$(RESET)"; \
 	kubectl port-forward svc/$(FEED_SVC) 18080:8080 --namespace=$(NAMESPACE) & \
 	PF_PID=$$!; \
 	sleep 5; \
@@ -260,7 +260,7 @@ wait-app: ## アプリケーション起動後の健全性チェックを待つ 
 # =============================================================================
 .PHONY: feed
 feed: ## サンプルデータを Vespa に投入する / Feed sample data to Vespa
-	@echo "$(BLUE)>>> サンプルデータを投入しています...$(RESET)" && \
+	@echo "$(BLUE)>>> サンプルデータを投入しています...$(RESET)"; \
 	kubectl port-forward svc/$(FEED_SVC) $(FEED_PORT):8080 --namespace=$(NAMESPACE) & \
 	PF_PID=$$!; \
 	sleep 5; \
@@ -279,7 +279,7 @@ feed: ## サンプルデータを Vespa に投入する / Feed sample data to Ve
 # =============================================================================
 .PHONY: search
 search: ## 全ドキュメントを検索する / Search all documents
-	@echo "$(BLUE)>>> 全ドキュメントを検索しています...$(RESET)" && \
+	@echo "$(BLUE)>>> 全ドキュメントを検索しています...$(RESET)"; \
 	kubectl port-forward svc/$(QUERY_SVC) $(QUERY_PORT):8080 --namespace=$(NAMESPACE) & \
 	PF_PID=$$!; \
 	sleep 5; \
@@ -290,7 +290,7 @@ search: ## 全ドキュメントを検索する / Search all documents
 
 .PHONY: search-rock
 search-rock: ## "Rock" ジャンルを検索する / Search Rock genre
-	@echo "$(BLUE)>>> Rock ジャンルを検索しています...$(RESET)" && \
+	@echo "$(BLUE)>>> Rock ジャンルを検索しています...$(RESET)"; \
 	kubectl port-forward svc/$(QUERY_SVC) $(QUERY_PORT):8080 --namespace=$(NAMESPACE) & \
 	PF_PID=$$!; \
 	sleep 5; \
@@ -301,7 +301,7 @@ search-rock: ## "Rock" ジャンルを検索する / Search Rock genre
 
 .PHONY: search-ja
 search-ja: ## 日本語キーワードで検索する (例: ロック) / Search with Japanese keyword (e.g. ロック)
-	@echo "$(BLUE)>>> 日本語検索: '$${KEYWORD:-ロック}'$(RESET)" && \
+	@echo "$(BLUE)>>> 日本語検索: '$${KEYWORD:-ロック}'$(RESET)"; \
 	kubectl port-forward svc/$(QUERY_SVC) $(QUERY_PORT):8080 --namespace=$(NAMESPACE) & \
 	PF_PID=$$!; \
 	sleep 5; \
@@ -325,7 +325,7 @@ status: ## Pod の起動状況を確認する / Show pod status
 
 .PHONY: check-configserver-health
 check-configserver-health: ## コンフィグサーバーの健全性を確認する / Check config server health
-	@echo "$(BLUE)>>> コンフィグサーバーの健全性を確認しています...$(RESET)" && \
+	@echo "$(BLUE)>>> コンフィグサーバーの健全性を確認しています...$(RESET)"; \
 	kubectl port-forward pod/$(CONFIGSERVER_POD) $(CONFIG_PORT):19071 --namespace=$(NAMESPACE) & \
 	PF_PID=$$!; \
 	sleep 5; \
@@ -334,17 +334,17 @@ check-configserver-health: ## コンフィグサーバーの健全性を確認�
 
 .PHONY: check-health
 check-health: ## 全サービスの健全性を確認する / Check health of all services
-	@echo "$(BOLD)=== コンフィグサーバー健全性 ===$(RESET)" && \
+	@echo "$(BOLD)=== コンフィグサーバー健全性 ===$(RESET)"; \
 	kubectl port-forward pod/$(CONFIGSERVER_POD) $(CONFIG_PORT):19071 --namespace=$(NAMESPACE) & \
 	PF1=$$!; sleep 5; \
 	curl -s http://localhost:$(CONFIG_PORT)/state/v1/health | python3 -m json.tool; \
 	kill $$PF1 2>/dev/null || true
-	@echo "" && echo "$(BOLD)=== フィードコンテナ健全性 ===$(RESET)" && \
+	@echo "" && echo "$(BOLD)=== フィードコンテナ健全性 ===$(RESET)"; \
 	kubectl port-forward svc/$(FEED_SVC) $(FEED_PORT):8080 --namespace=$(NAMESPACE) & \
 	PF2=$$!; sleep 5; \
 	curl -s http://localhost:$(FEED_PORT)/state/v1/health | python3 -m json.tool; \
 	kill $$PF2 2>/dev/null || true
-	@echo "" && echo "$(BOLD)=== クエリコンテナ健全性 ===$(RESET)" && \
+	@echo "" && echo "$(BOLD)=== クエリコンテナ健全性 ===$(RESET)"; \
 	kubectl port-forward svc/$(QUERY_SVC) $(QUERY_PORT):8080 --namespace=$(NAMESPACE) & \
 	PF3=$$!; sleep 5; \
 	curl -s http://localhost:$(QUERY_PORT)/state/v1/health | python3 -m json.tool; \
