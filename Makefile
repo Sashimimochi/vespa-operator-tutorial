@@ -56,7 +56,7 @@ help: ## コマンド一覧 / Show available commands
 		awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-22s$(RESET) %s\n", $$1, $$2}'
 	@echo ""
 	@echo "$(BOLD)前提条件 / Prerequisites:$(RESET)"
-	@echo "  - Docker, kind, kubectl, helm, curl, zip がインストール済みであること"
+	@echo "  - Docker, kind, kubectl, helm, vespa, curl, zip がインストール済みであること"
 	@echo "  - Docker daemon が起動していること"
 	@echo ""
 
@@ -268,7 +268,7 @@ feed: ## サンプルデータを Vespa に投入する / Feed sample data to Ve
 	kubectl port-forward svc/$(FEED_SVC) $(FEED_PORT):8080 --namespace=$(NAMESPACE) & \
 	PF_PID=$$!; \
 	sleep 5; \
-	python3 scripts/feed.py $(FEED_PORT) data/feed.json; \
+	vespa feed --target http://localhost:$(FEED_PORT) data/feed.json; \
 	FEED_STATUS=$$?; \
 	kill $$PF_PID 2>/dev/null || true; \
 	if [ $$FEED_STATUS -eq 0 ]; then \
