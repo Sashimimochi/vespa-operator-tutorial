@@ -41,6 +41,7 @@ Kubernetes 上で [Vespa](https://vespa.ai) 検索エンジンのクラスター
 | [kind](https://kind.sigs.k8s.io/docs/user/quick-start/) | 0.20 以上 | `brew install kind` |
 | [kubectl](https://kubernetes.io/docs/tasks/tools/) | 1.27 以上 | `brew install kubectl` |
 | [Helm](https://helm.sh/docs/intro/install/) | 3.x 以上 | `brew install helm` |
+| [Vespa CLI](https://docs.vespa.ai/en/vespa-cli.html) | 8.x 以上 | `brew install vespa-cli` |
 | curl, zip, python3 | 標準 | OS 標準 |
 
 > **注意**: このチュートリアルは Docker Desktop が起動している状態で実行してください。  
