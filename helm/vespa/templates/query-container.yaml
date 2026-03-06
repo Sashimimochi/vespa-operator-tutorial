@@ -19,6 +19,17 @@ spec:
         app: {{ include "vespa.fullname" . }}-query-container
         name: {{ include "vespa.internalService" . }}
     spec:
+{{- if .Values.persistence.enabled }}
+      initContainers:
+        - name: chown-var
+          securityContext:
+            runAsUser: 0
+          image: busybox
+          command: ["sh", "-c", "chown -R 1000 /opt/vespa/var"]
+          volumeMounts:
+            - name: vespa-var
+              mountPath: /opt/vespa/var
+{{- end }}
       containers:
         - name: vespa-query-container
           image: {{ include "vespa.image" . }}
@@ -41,3 +52,19 @@ spec:
             failureThreshold: 30
           resources:
             {{- toYaml .Values.queryContainer.resources | nindent 12 }}
+{{- if .Values.persistence.enabled }}
+          volumeMounts:
+            - name: vespa-var
+              mountPath: /opt/vespa/var
+{{- end }}
+{{- if .Values.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: vespa-var
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: {{ .Values.storageClass | quote }}
+        resources:
+          requests:
+            storage: {{ .Values.queryContainer.storage.varSize }}
+{{- end }}

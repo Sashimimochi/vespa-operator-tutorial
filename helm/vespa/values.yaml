@@ -3,6 +3,14 @@
 # Default values for Vespa Helm chart
 # Builds a multi-node redundant cluster using the official vespaengine/vespa image
 
+# 永続化ボリューム設定 / Persistent volume configuration
+# false に設定するとすべての PVC を無効化し emptyDir (一時ストレージ) を使用する
+# 永続化ボリュームに対応していない環境では false を指定してください
+# Set to false to disable all PVCs and use emptyDir (ephemeral storage) instead.
+# Use false in environments where PersistentVolumes are not available.
+persistence:
+  enabled: true
+
 # Vespa Docker イメージ設定
 image:
   repository: vespaengine/vespa
@@ -39,6 +47,8 @@ admin:
       memory: "512Mi"
     limits:
       memory: "1G"
+  storage:
+    varSize: 2Gi
 
 # フィードコンテナ (データ投入用) / Feed containers (for document ingestion)
 feedContainer:
@@ -50,6 +60,8 @@ feedContainer:
       memory: "1.5G"
   # JVM オプション (ローカル開発用 / Local dev only — remove for production)
   jvmArgs: "-Xms32M -Xmx128M"
+  storage:
+    varSize: 5Gi
 
 # クエリコンテナ (検索用) / Query containers (for search)
 queryContainer:
@@ -61,6 +73,8 @@ queryContainer:
       memory: "1.5G"
   # JVM オプション (ローカル開発用 / Local dev only — remove for production)
   jvmArgs: "-Xms32M -Xmx128M"
+  storage:
+    varSize: 5Gi
 
 # コンテントノード (データ保存用、冗長化のため 2 台以上を推奨)
 # Content nodes (for data storage, 2+ recommended for redundancy)

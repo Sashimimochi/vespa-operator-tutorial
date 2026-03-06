@@ -43,6 +43,12 @@ spec:
           volumeMounts:
             - name: vespa-var
               mountPath: /opt/vespa/var
+{{- if not .Values.persistence.enabled }}
+      volumes:
+        - name: vespa-var
+          emptyDir: {}
+{{- end }}
+{{- if .Values.persistence.enabled }}
   volumeClaimTemplates:
     - metadata:
         name: vespa-var
@@ -51,4 +57,5 @@ spec:
         storageClassName: {{ .Values.storageClass | quote }}
         resources:
           requests:
-            storage: 2Gi
+            storage: {{ .Values.admin.storage.varSize }}
+{{- end }}
