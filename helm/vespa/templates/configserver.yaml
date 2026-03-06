@@ -63,6 +63,16 @@ spec:
               mountPath: /opt/vespa/logs
             - name: vespa-workspace
               mountPath: /workspace
+{{- if not .Values.persistence.enabled }}
+      volumes:
+        - name: vespa-var
+          emptyDir: {}
+        - name: vespa-logs
+          emptyDir: {}
+        - name: vespa-workspace
+          emptyDir: {}
+{{- end }}
+{{- if .Values.persistence.enabled }}
   volumeClaimTemplates:
     - metadata:
         name: vespa-var
@@ -88,3 +98,4 @@ spec:
         resources:
           requests:
             storage: {{ .Values.configserver.storage.workspaceSize }}
+{{- end }}
