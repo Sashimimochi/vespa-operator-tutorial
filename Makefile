@@ -1,10 +1,11 @@
 # =============================================================================
-# Vespa on Kubernetes (kind) チュートリアル Makefile
+# Vespa on Kubernetes チュートリアル Makefile
 # =============================================================================
 # 使い方 / Usage:
-#   make help          — コマンド一覧を表示 / Show available commands
-#   make all           — クラスター構築からデータ投入まで一括実行 / Full setup
-#   make clean         — 全リソースを削除 / Delete all resources
+#   make help                        — コマンド一覧を表示 / Show available commands
+#   make all                         — クラスター構築からデータ投入まで一括実行 (kind) / Full setup (kind)
+#   make all CLUSTER_ENV=rancher-desktop — Rancher Desktop 環境で全ステップを実行 / Full setup (Rancher Desktop)
+#   make clean                       — 全リソースを削除 / Delete all resources
 # =============================================================================
 
 # --- 設定変数 / Configuration variables ---
@@ -12,6 +13,11 @@ CLUSTER_NAME    := vespa
 NAMESPACE       := default
 HELM_RELEASE    := vespa
 HELM_CHART      := ./helm/vespa
+
+# クラスター環境 / Cluster environment
+# 使用可能な値: kind (デフォルト), rancher-desktop
+# Available values: kind (default), rancher-desktop
+CLUSTER_ENV     ?= kind
 
 # Pod / Service 名 (Helm リリース名 + コンポーネント名)
 CONFIGSERVER_POD  := $(HELM_RELEASE)-configserver-0
@@ -45,19 +51,25 @@ BLUE  := \033[34m
 .PHONY: help
 help: ## コマンド一覧 / Show available commands
 	@echo ""
-	@echo "$(BOLD)Vespa on Kubernetes (kind) チュートリアル$(RESET)"
+	@echo "$(BOLD)Vespa on Kubernetes チュートリアル$(RESET)"
 	@echo "=============================================="
 	@echo ""
 	@echo "$(BOLD)クイックスタート / Quick start:$(RESET)"
-	@echo "  make all          — 全ステップを順番に実行 / Run all steps in order"
+	@echo "  make all                         — 全ステップを順番に実行 (kind) / Run all steps in order (kind)"
+	@echo "  make all CLUSTER_ENV=rancher-desktop — Rancher Desktop 環境で全ステップを実行 / Run all steps (Rancher Desktop)"
 	@echo ""
 	@echo "$(BOLD)個別コマンド / Individual commands:$(RESET)"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
 		awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-22s$(RESET) %s\n", $$1, $$2}'
 	@echo ""
+	@echo "$(BOLD)環境変数 / Environment variables:$(RESET)"
+	@echo "  CLUSTER_ENV    クラスター環境 (kind [デフォルト] / rancher-desktop)"
+	@echo "                 Cluster environment (kind [default] / rancher-desktop)"
+	@echo ""
 	@echo "$(BOLD)前提条件 / Prerequisites:$(RESET)"
-	@echo "  - Docker, kind, kubectl, helm, vespa, curl, zip がインストール済みであること"
-	@echo "  - Docker daemon が起動していること"
+	@echo "  - Docker, kubectl, helm, vespa, curl, zip がインストール済みであること"
+	@echo "  - kind 使用時: kind がインストール済みで Docker daemon が起動していること"
+	@echo "  - Rancher Desktop 使用時: Rancher Desktop が起動していること"
 	@echo ""
 
 # =============================================================================
@@ -70,10 +82,14 @@ all: create-cluster install wait-configserver start-services deploy-app wait-rea
 # 1. kind クラスター作成 / Create kind cluster
 # =============================================================================
 .PHONY: create-cluster
-create-cluster: ## kind クラスターを作成する / Create kind cluster
-	@echo "$(BLUE)>>> kind クラスター '$(CLUSTER_NAME)' を作成しています...$(RESET)"
-	kind create cluster --name $(CLUSTER_NAME) --config kind/cluster.yaml
-	@echo "$(GREEN)>>> kind クラスターの作成が完了しました$(RESET)"
+create-cluster: ## kind クラスターを作成する (CLUSTER_ENV=kind の場合のみ) / Create kind cluster (only when CLUSTER_ENV=kind)
+	@if [ "$(CLUSTER_ENV)" = "kind" ]; then \
+		echo "$(BLUE)>>> kind クラスター '$(CLUSTER_NAME)' を作成しています...$(RESET)"; \
+		kind create cluster --name $(CLUSTER_NAME) --config kind/cluster.yaml; \
+		echo "$(GREEN)>>> kind クラスターの作成が完了しました$(RESET)"; \
+	else \
+		echo "$(GREEN)>>> CLUSTER_ENV=$(CLUSTER_ENV): kind クラスター作成をスキップします / Skipping kind cluster creation$(RESET)"; \
+	fi
 
 # =============================================================================
 # 2. Helm で Vespa をインストール / Install Vespa via Helm
@@ -427,11 +443,15 @@ uninstall: ## Vespa の Helm リリースを削除する / Uninstall Vespa Helm 
 	kubectl delete pvc --all --namespace=$(NAMESPACE) --ignore-not-found=true
 
 .PHONY: clean
-clean: stop-port-forward ## kind クラスターを含む全リソースを削除する / Delete all resources including kind cluster
+clean: stop-port-forward ## 全リソースを削除する / Delete all resources (kind クラスターも削除 / including kind cluster when CLUSTER_ENV=kind)
 	@echo "$(BLUE)>>> 全リソースを削除しています...$(RESET)"
 	-helm uninstall $(HELM_RELEASE) --namespace=$(NAMESPACE) 2>/dev/null || true
 	-kubectl delete pvc --all --namespace=$(NAMESPACE) 2>/dev/null || true
-	kind delete cluster --name $(CLUSTER_NAME)
+	@if [ "$(CLUSTER_ENV)" = "kind" ]; then \
+		kind delete cluster --name $(CLUSTER_NAME); \
+	else \
+		echo "$(GREEN)>>> CLUSTER_ENV=$(CLUSTER_ENV): kind クラスター削除をスキップします / Skipping kind cluster deletion$(RESET)"; \
+	fi
 	@echo "$(GREEN)>>> クリーンアップ完了$(RESET)"
 
 .PHONY: helm-lint

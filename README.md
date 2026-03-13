@@ -3,6 +3,8 @@
 Kubernetes 上で [Vespa](https://vespa.ai) 検索エンジンのクラスターを構築するチュートリアルです。  
 公式 [`vespaengine/vespa`](https://hub.docker.com/r/vespaengine/vespa) Docker イメージを使用したカスタム Helm チャートにより、冗長化されたマルチノードクラスターを構築します。
 
+[kind](https://kind.sigs.k8s.io/) および [Rancher Desktop](https://rancherdesktop.io/) の両環境で動作します。
+
 ## アーキテクチャ概要
 
 ```
@@ -38,21 +40,31 @@ Kubernetes 上で [Vespa](https://vespa.ai) 検索エンジンのクラスター
 | ツール | バージョン | インストール |
 |---|---|---|
 | [Docker](https://docs.docker.com/get-docker/) | 20.x 以上 | 公式サイト参照 |
-| [kind](https://kind.sigs.k8s.io/docs/user/quick-start/) | 0.20 以上 | `brew install kind` |
+| [kind](https://kind.sigs.k8s.io/docs/user/quick-start/) | 0.20 以上 | `brew install kind` (kind 使用時のみ) |
 | [kubectl](https://kubernetes.io/docs/tasks/tools/) | 1.27 以上 | `brew install kubectl` |
 | [Helm](https://helm.sh/docs/intro/install/) | 3.x 以上 | `brew install helm` |
 | [Vespa CLI](https://docs.vespa.ai/en/vespa-cli.html) | 8.x 以上 | `brew install vespa-cli` |
 | curl, zip, python3 | 標準 | OS 標準 |
 
-> **注意**: このチュートリアルは Docker Desktop が起動している状態で実行してください。  
-> ホストマシンに **16GB 以上の RAM** を推奨します（Vespa の各コンポーネントが複数起動するため）。
+> **注意**: ホストマシンに **16GB 以上の RAM** を推奨します（Vespa の各コンポーネントが複数起動するため）。
+
+### 対応環境
+
+| 環境 | `CLUSTER_ENV` の値 | 備考 |
+|---|---|---|
+| [kind](https://kind.sigs.k8s.io/) | `kind`（デフォルト） | Docker Desktop が起動していること |
+| [Rancher Desktop](https://rancherdesktop.io/) | `rancher-desktop` | Rancher Desktop が起動していること |
 
 ## クイックスタート
 
 全ステップを一括実行する場合:
 
 ```bash
+# kind を使う場合 (デフォルト)
 make all
+
+# Rancher Desktop を使う場合
+make all CLUSTER_ENV=rancher-desktop
 ```
 
 ステップバイステップで実行する場合は以下を参照してください。
@@ -61,13 +73,25 @@ make all
 
 ## 詳細手順
 
-### ステップ 1: kind クラスターの作成
+### ステップ 1: クラスターの準備
+
+#### kind を使う場合
 
 ```bash
 make create-cluster
 ```
 
 `kind/cluster.yaml` に定義された 4 ワーカーノードの kind クラスターが作成されます。
+
+#### Rancher Desktop を使う場合
+
+Rancher Desktop が起動していれば、すでに Kubernetes クラスターが利用可能です。  
+クラスター作成は不要なため、このステップはスキップできます。
+
+```bash
+make create-cluster CLUSTER_ENV=rancher-desktop
+# → "CLUSTER_ENV=rancher-desktop: kind クラスター作成をスキップします / Skipping kind cluster creation" と表示されます
+```
 
 ### ステップ 2: Vespa クラスターのインストール
 
@@ -284,11 +308,14 @@ make deploy-app
 ## クリーンアップ
 
 ```bash
-# Helm リリースのみ削除 (kind クラスターは残す)
+# Helm リリースのみ削除 (クラスターは残す)
 make uninstall
 
-# kind クラスターを含む全リソースを削除
+# 全リソースを削除 (kind クラスターも削除)
 make clean
+
+# Rancher Desktop の場合: Helm リリースと PVC のみ削除 (クラスターは残す)
+make clean CLUSTER_ENV=rancher-desktop
 ```
 
 ---
